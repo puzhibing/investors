@@ -1,0 +1,30 @@
+package com.puzhibing.investors.dao;
+
+
+import com.puzhibing.investors.dao.mapper.SecuritiesSqlProvider;
+import com.puzhibing.investors.pojo.Securities;
+import org.apache.ibatis.annotations.*;
+
+@Mapper
+public interface SecuritiesMapper {
+
+
+    /**
+     * 添加数据
+     * @param securities
+     */
+    @SelectKey(statement = {"select last_insert_id()"}, keyProperty = "id", before = false, resultType = Integer.class)
+    @InsertProvider(type = SecuritiesSqlProvider.class, method = "insert")
+    void insert(Securities securities);
+
+
+    /**
+     * 根据证券编号和类型id获取数据
+     * @param code
+     * @param securitiesCategoryId
+     * @return
+     */
+    @SelectProvider(type = SecuritiesSqlProvider.class, method = "queryByCodeAndSecuritiesCategory")
+    Securities queryByCodeAndSecuritiesCategory(@Param("code") String code, @Param("securitiesCategoryId") Integer securitiesCategoryId);
+
+}
