@@ -31,4 +31,25 @@ public class SecuritiesSqlProvider {
                     .WHERE("code = #{code} and securitiesCategoryId = #{securitiesCategoryId}");
         }}.toString();
     }
+
+
+    /**
+     * 根据证券编号和类型id获取数据
+     * @param code
+     * @param securitiesCategoryId
+     * @return
+     */
+    public String queryList(String code, Integer securitiesCategoryId){
+        return new SQL(){{
+            SQL sql = SELECT("id, " + COLUMNS)
+                    .FROM("db_securities")
+                    .WHERE("1 = 1");
+            if(null != code){
+                sql.WHERE("code = #{code}");
+            }
+            if(null != securitiesCategoryId){
+                sql.WHERE("securitiesCategoryId = #{securitiesCategoryId}");
+            }
+        }}.toString();
+    }
 }

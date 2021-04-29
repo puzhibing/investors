@@ -9,6 +9,7 @@ import com.puzhibing.investors.pojo.SecuritiesCategory;
 import com.puzhibing.investors.service.ISecuritiesCategoryService;
 import com.puzhibing.investors.service.ISecuritiesService;
 import com.puzhibing.investors.util.HttpClientUtil;
+import org.jsoup.Jsoup;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -59,6 +60,7 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
             Securities securities = securitiesMapper.queryByCodeAndSecuritiesCategory(code, sh_a.getId());
             if(null == securities){
                 securities = new Securities();
+                securities.setSystemCode("sh_a_" + code);
                 securities.setCode(code);
                 securities.setName(name);
                 securities.setSecuritiesCategoryId(sh_a.getId());
@@ -87,6 +89,7 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
             Securities securities = securitiesMapper.queryByCodeAndSecuritiesCategory(code, sh_b.getId());
             if(null == securities){
                 securities = new Securities();
+                securities.setSystemCode("sh_b_" + code);
                 securities.setCode(code);
                 securities.setName(name);
                 securities.setSecuritiesCategoryId(sh_b.getId());
@@ -94,6 +97,76 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
                 securities.setMarketAddress("上海证券交易所");
                 securitiesMapper.insert(securities);
             }
+        }
+
+        /**
+         * 获取并添加【深证证券交易所A股】证券数据
+         */
+        int l = 1;
+        while (true){
+            String urlSZA = "http://www.szse.cn/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1110&TABKEY=tab1&PAGENO=" + l + "&PAGESIZE=20";
+            header = new HashMap<>();
+            get = httpClientUtil.pushHttpRequset("GET", urlSZA, null, header, null);
+            result = JSON.parseArray(get).getJSONObject(0).getJSONArray("data");
+            SecuritiesCategory sz_a = securitiesCategoryService.queryByCode("sz_a");
+            for(int i = 0; i < result.size(); i++){
+                JSONObject jsonObject = result.getJSONObject(i);
+                String name = jsonObject.getString("agjc");
+                name = Jsoup.parse(name).getElementsByTag("u").text();
+                String code = jsonObject.getString("agdm");
+                String listing_date = jsonObject.getString("agssrq");
+
+                Securities securities = securitiesMapper.queryByCodeAndSecuritiesCategory(code, sz_a.getId());
+                if(null == securities){
+                    securities = new Securities();
+                    securities.setSystemCode("sz_a_" + code);
+                    securities.setCode(code);
+                    securities.setName(name);
+                    securities.setSecuritiesCategoryId(sz_a.getId());
+                    securities.setMarketTime("".equals(listing_date) ? null : sdf.parse(listing_date));
+                    securities.setMarketAddress("深证证券交易所");
+                    securitiesMapper.insert(securities);
+                }
+            }
+            if(result.size() == 0){
+                break;
+            }
+            l++;
+        }
+
+        /**
+         * 获取并添加【深证证券交易所B股】证券数据
+         */
+        l = 1;
+        while (true){
+            String urlSZB = "http://www.szse.cn/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1110&TABKEY=tab2&PAGENO=" + l + "&PAGESIZE=20";
+            header = new HashMap<>();
+            get = httpClientUtil.pushHttpRequset("GET", urlSZB, null, header, null);
+            result = JSON.parseArray(get).getJSONObject(1).getJSONArray("data");
+            SecuritiesCategory sz_b = securitiesCategoryService.queryByCode("sz_b");
+            for(int i = 0; i < result.size(); i++){
+                JSONObject jsonObject = result.getJSONObject(i);
+                String name = jsonObject.getString("bgjc");
+                name = Jsoup.parse(name).getElementsByTag("u").text();
+                String code = jsonObject.getString("bgdm");
+                String listing_date = jsonObject.getString("bgssrq");
+
+                Securities securities = securitiesMapper.queryByCodeAndSecuritiesCategory(code, sz_b.getId());
+                if(null == securities){
+                    securities = new Securities();
+                    securities.setSystemCode("sz_b_" + code);
+                    securities.setCode(code);
+                    securities.setName(name);
+                    securities.setSecuritiesCategoryId(sz_b.getId());
+                    securities.setMarketTime("".equals(listing_date) ? null : sdf.parse(listing_date));
+                    securities.setMarketAddress("深证证券交易所");
+                    securitiesMapper.insert(securities);
+                }
+            }
+            if(result.size() == 0){
+                break;
+            }
+            l++;
         }
     }
 }

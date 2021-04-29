@@ -15,6 +15,10 @@ public class Securities {
      */
     private Integer id;
     /**
+     * 系统编号
+     */
+    private String systemCode;
+    /**
      * 证券编号
      */
     private String code;

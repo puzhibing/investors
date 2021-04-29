@@ -17,8 +17,12 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -78,7 +82,6 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                 securitiesMarket = new SecuritiesMarket();
                 securitiesMarket.setSecuritiesId(securities.getId());
                 securitiesMarket.setTradeDate(sdf.parse(date));
-                securitiesMarket.setLastClosingPrice(sqspj);
                 securitiesMarket.setClosingPrice(spj);
                 securitiesMarket.setRiseFallPrice(zdje);
                 securitiesMarket.setRiseFallRatio(zdl);
@@ -88,10 +91,10 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                 securitiesMarket.setAmplitude(zfl);
                 securitiesMarket.setVolume(cjl);
                 securitiesMarket.setDealAmount(cjje);
+                securitiesMarket.setLastClosingPrice(sqspj);
                 securitiesMarketMapper.insert(securitiesMarket);
             }
         }
-
 
         /**
          * 获取【上海证券交易所B股日行情】数据
@@ -124,7 +127,6 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                 securitiesMarket = new SecuritiesMarket();
                 securitiesMarket.setSecuritiesId(securities.getId());
                 securitiesMarket.setTradeDate(sdf.parse(date));
-                securitiesMarket.setLastClosingPrice(sqspj);
                 securitiesMarket.setClosingPrice(spj);
                 securitiesMarket.setRiseFallPrice(zdje);
                 securitiesMarket.setRiseFallRatio(zdl);
@@ -134,8 +136,58 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                 securitiesMarket.setAmplitude(zfl);
                 securitiesMarket.setVolume(cjl);
                 securitiesMarket.setDealAmount(cjje);
+                securitiesMarket.setLastClosingPrice(sqspj);
                 securitiesMarketMapper.insert(securitiesMarket);
             }
         }
+
+        /**
+         * 获取【深证证券交易所A、B股日行情】数据
+         */
+        SecuritiesCategory sz_a = securitiesCategoryService.queryByCode("sz_a");
+        List<Securities> securities1 = securitiesMapper.queryList(null, sz_a.getId());
+        SecuritiesCategory sz_b = securitiesCategoryService.queryByCode("sz_b");
+        List<Securities> securities2 = securitiesMapper.queryList(null, sz_b.getId());
+        securities1.addAll(securities2);
+        for(Securities securities : securities1){
+            String urlSZ = "http://www.szse.cn/api/market/ssjjhq/getTimeData?marketId=1&code=" + securities.getCode();
+            header = new HashMap<>();
+            get = httpClientUtil.pushHttpRequset("GET", urlSZ, null, header, null);
+            jsonObject = JSON.parseObject(get).getJSONObject("data");
+            String code = jsonObject.getString("code");
+            String kpj = jsonObject.getString("open");//开盘价
+            String zgj = jsonObject.getString("high");//最高价
+            String zdj = jsonObject.getString("low");//最低价
+            String spj = jsonObject.getString("now");//收盘价
+            String sqspj = jsonObject.getString("close");//上期收盘价
+            String zdl = jsonObject.getString("deltaPercent");//涨跌率（%）
+            String cjl = jsonObject.getString("volume");//成交量（股）
+            String cjje = jsonObject.getString("amount");//成交金额（元）
+            String zdje = jsonObject.getString("delta");//涨跌金额
+            BigDecimal divide = new BigDecimal(Double.valueOf(zgj) - Double.valueOf(zdj)).divide(new BigDecimal(sqspj), new MathContext(2, RoundingMode.HALF_EVEN));
+            String zfl = jsonObject.getString(divide.toString());//振幅率（%）
+
+            SecuritiesMarket securitiesMarket = securitiesMarketMapper.queryBySecuritiesIdAndDate(securities.getId(), new Date());
+            if(null == securitiesMarket){
+                securitiesMarket = new SecuritiesMarket();
+                securitiesMarket.setSecuritiesId(securities.getId());
+                securitiesMarket.setTradeDate(new Date());
+                securitiesMarket.setClosingPrice(spj);
+                securitiesMarket.setRiseFallPrice(zdje);
+                securitiesMarket.setRiseFallRatio(zdl);
+                securitiesMarket.setOpeningPrice(kpj);
+                securitiesMarket.setTopPrice(zgj);
+                securitiesMarket.setLowestPrice(zdj);
+                securitiesMarket.setAmplitude(zfl);
+                securitiesMarket.setVolume(cjl);
+                securitiesMarket.setDealAmount(cjje);
+                securitiesMarket.setLastClosingPrice(sqspj);
+                securitiesMarketMapper.insert(securitiesMarket);
+            }
+
+        }
+
+
+
     }
 }
