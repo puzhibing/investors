@@ -62,8 +62,4 @@ public class SecuritiesMarket {
      * 成交金额（元）
      */
     private String dealAmount;
-    /**
-     * 进出量（股）
-     */
-    private String inout;
 }

@@ -39,11 +39,11 @@ public class TaskUtil {
     /**
      * 每天的20点执行的任务
      */
-    @Scheduled(cron = "0 0 16 * * *")
+    @Scheduled(cron = "0 30 17 * * *")
     public void taskDay(){
         try {
             securitiesService.pullSecurities();
-            Thread.sleep(30 * 60 * 1000);
+            Thread.sleep(60 * 1000);
             securitiesMarketService.pullSecuritiesMarket();
         }catch (Exception e){
             e.printStackTrace();

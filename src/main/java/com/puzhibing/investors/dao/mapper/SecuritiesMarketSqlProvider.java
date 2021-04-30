@@ -5,7 +5,7 @@ import org.apache.ibatis.jdbc.SQL;
 public class SecuritiesMarketSqlProvider {
 
     private final String COLUMNS = "securitiesId, tradeDate, lastClosingPrice, closingPrice, riseFallPrice, riseFallRatio, " +
-            "openingPrice, topPrice, lowestPrice, amplitude, volume, dealAmount, inout";
+            "openingPrice, topPrice, lowestPrice, amplitude, volume, dealAmount";
 
     private final String TABLE = "db_securities_market";
 
@@ -18,7 +18,7 @@ public class SecuritiesMarketSqlProvider {
             INSERT_INTO(TABLE)
                     .INTO_COLUMNS(COLUMNS)
                     .INTO_VALUES("#{securitiesId}, #{tradeDate}, #{lastClosingPrice}, #{closingPrice}, #{riseFallPrice}, #{riseFallRatio}, " +
-                            "#{openingPrice}, #{topPrice}, #{lowestPrice}, #{amplitude}, #{volume}, #{dealAmount}, #{inout}");
+                            "#{openingPrice}, #{topPrice}, #{lowestPrice}, #{amplitude}, #{volume}, #{dealAmount}");
         }}.toString();
     }
 
@@ -31,7 +31,7 @@ public class SecuritiesMarketSqlProvider {
         return new SQL(){{
             SELECT("id, " + COLUMNS)
                     .FROM(TABLE)
-                    .WHERE("securitiesId = #{securitiesId} and tradeDate = #{date}");
+                    .WHERE("securitiesId = #{securitiesId} and DATE_FORMAT(tradeDate, '%Y-%m-%d') = DATE_FORMAT(#{date}, '%Y-%m-%d')");
         }}.toString();
     }
 }

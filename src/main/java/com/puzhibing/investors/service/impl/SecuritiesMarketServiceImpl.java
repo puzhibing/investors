@@ -10,7 +10,6 @@ import com.puzhibing.investors.pojo.SecuritiesCategory;
 import com.puzhibing.investors.pojo.SecuritiesMarket;
 import com.puzhibing.investors.service.ISecuritiesCategoryService;
 import com.puzhibing.investors.service.ISecuritiesMarketService;
-import com.puzhibing.investors.service.ISecuritiesService;
 import com.puzhibing.investors.util.HttpClientUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -153,12 +152,12 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             String urlSZ = "http://www.szse.cn/api/market/ssjjhq/getTimeData?marketId=1&code=" + securities.getCode();
             header = new HashMap<>();
             get = httpClientUtil.pushHttpRequset("GET", urlSZ, null, header, null);
-            jsonObject = JSON.parseObject(get).getJSONObject("data");
+            JSONObject jsonObject1 = JSON.parseObject(get);
+            jsonObject = jsonObject1.getJSONObject("data");
+            SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+            String datetime = jsonObject1.getString("datetime");
             String code = jsonObject.getString("code");
             String kpj = jsonObject.getString("open");//开盘价
-            if(null == kpj){
-                continue;
-            }
             String zgj = jsonObject.getString("high");//最高价
             String zdj = jsonObject.getString("low");//最低价
             String spj = jsonObject.getString("now");//收盘价
@@ -167,24 +166,38 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             String cjl = jsonObject.getString("volume");//成交量（股）
             String cjje = jsonObject.getString("amount");//成交金额（元）
             String zdje = jsonObject.getString("delta");//涨跌金额
-            BigDecimal divide = new BigDecimal(Double.valueOf(zgj) - Double.valueOf(zdj)).multiply(new BigDecimal(100)).divide(new BigDecimal(sqspj), new MathContext(2, RoundingMode.HALF_EVEN));
-            String zfl = jsonObject.getString(divide.toString());//振幅率（%）
-
+            String zfl = null;
+            if(null == kpj){//停牌
+                kpj = sqspj;//开盘价
+                zgj = sqspj;//最高价
+                zdj = sqspj;//最低价
+                spj = sqspj;//收盘价
+                zdl = "0";//涨跌率（%）
+                cjl = "0";//成交量（股）
+                cjje = "0";//成交金额（元）
+                zdje = "0";//涨跌金额
+                zfl = "0";//振幅率（%）
+            }else{
+                BigDecimal divide = new BigDecimal(Double.valueOf(zgj) - Double.valueOf(zdj)).multiply(new BigDecimal(100)).divide(new BigDecimal(sqspj), new MathContext(2, RoundingMode.HALF_EVEN));
+                zfl = divide.toString();//振幅率（%）
+            }
             JSONArray picdowndata = jsonObject.getJSONArray("picdowndata");
             Long inout = 0L;
-            for(int i = 0; i < picdowndata.size(); i++){
-                JSONArray jsonArray = picdowndata.getJSONArray(i);
-                String time = jsonArray.getString(0);
-                Integer num = jsonArray.getInteger(1);
-                String direction = jsonArray.getString(2);
-                inout = ("plus".equals(direction) ? (inout + num) : (inout - num));
+            if(null != picdowndata){
+                for(int i = 0; i < picdowndata.size(); i++){
+                    JSONArray jsonArray = picdowndata.getJSONArray(i);
+                    String time = jsonArray.getString(0);
+                    Integer num = jsonArray.getInteger(1);
+                    String direction = jsonArray.getString(2);
+                    inout = ("plus".equals(direction) ? (inout + num) : (inout - num));
+                }
             }
 
-            SecuritiesMarket securitiesMarket = securitiesMarketMapper.queryBySecuritiesIdAndDate(securities.getId(), new Date());
+            SecuritiesMarket securitiesMarket = securitiesMarketMapper.queryBySecuritiesIdAndDate(securities.getId(), sdf1.parse(datetime));
             if(null == securitiesMarket){
                 securitiesMarket = new SecuritiesMarket();
                 securitiesMarket.setSecuritiesId(securities.getId());
-                securitiesMarket.setTradeDate(new Date());
+                securitiesMarket.setTradeDate(sdf1.parse(datetime));
                 securitiesMarket.setClosingPrice(spj);
                 securitiesMarket.setRiseFallPrice(zdje);
                 securitiesMarket.setRiseFallRatio(zdl);
@@ -195,7 +208,6 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                 securitiesMarket.setVolume(cjl);
                 securitiesMarket.setDealAmount(cjje);
                 securitiesMarket.setLastClosingPrice(sqspj);
-                securitiesMarket.setInout(inout.toString());
                 securitiesMarketMapper.insert(securitiesMarket);
             }
 
