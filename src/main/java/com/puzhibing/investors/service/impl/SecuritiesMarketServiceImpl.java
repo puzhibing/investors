@@ -156,6 +156,9 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             jsonObject = JSON.parseObject(get).getJSONObject("data");
             String code = jsonObject.getString("code");
             String kpj = jsonObject.getString("open");//开盘价
+            if(null == kpj){
+                continue;
+            }
             String zgj = jsonObject.getString("high");//最高价
             String zdj = jsonObject.getString("low");//最低价
             String spj = jsonObject.getString("now");//收盘价
@@ -164,8 +167,18 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             String cjl = jsonObject.getString("volume");//成交量（股）
             String cjje = jsonObject.getString("amount");//成交金额（元）
             String zdje = jsonObject.getString("delta");//涨跌金额
-            BigDecimal divide = new BigDecimal(Double.valueOf(zgj) - Double.valueOf(zdj)).divide(new BigDecimal(sqspj), new MathContext(2, RoundingMode.HALF_EVEN));
+            BigDecimal divide = new BigDecimal(Double.valueOf(zgj) - Double.valueOf(zdj)).multiply(new BigDecimal(100)).divide(new BigDecimal(sqspj), new MathContext(2, RoundingMode.HALF_EVEN));
             String zfl = jsonObject.getString(divide.toString());//振幅率（%）
+
+            JSONArray picdowndata = jsonObject.getJSONArray("picdowndata");
+            Long inout = 0L;
+            for(int i = 0; i < picdowndata.size(); i++){
+                JSONArray jsonArray = picdowndata.getJSONArray(i);
+                String time = jsonArray.getString(0);
+                Integer num = jsonArray.getInteger(1);
+                String direction = jsonArray.getString(2);
+                inout = ("plus".equals(direction) ? (inout + num) : (inout - num));
+            }
 
             SecuritiesMarket securitiesMarket = securitiesMarketMapper.queryBySecuritiesIdAndDate(securities.getId(), new Date());
             if(null == securitiesMarket){
@@ -182,6 +195,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                 securitiesMarket.setVolume(cjl);
                 securitiesMarket.setDealAmount(cjje);
                 securitiesMarket.setLastClosingPrice(sqspj);
+                securitiesMarket.setInout(inout.toString());
                 securitiesMarketMapper.insert(securitiesMarket);
             }
 

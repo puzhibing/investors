@@ -1,10 +1,11 @@
 package com.puzhibing.investors.dao.mapper;
 
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.jdbc.SQL;
 
 public class SecuritiesSqlProvider {
 
-    private final String COLUMNS = "code, securitiesCategoryId, name, marketTime, marketAddress";
+    private final String COLUMNS = "systemCode, code, securitiesCategoryId, name, marketTime, marketAddress";
 
 
     /**
@@ -15,7 +16,7 @@ public class SecuritiesSqlProvider {
         return new SQL(){{
             INSERT_INTO("db_securities")
                     .INTO_COLUMNS(COLUMNS)
-                    .INTO_VALUES("#{code}, #{securitiesCategoryId}, #{name}, #{marketTime}, #{marketAddress}");
+                    .INTO_VALUES("#{systemCode}, #{code}, #{securitiesCategoryId}, #{name}, #{marketTime}, #{marketAddress}");
         }}.toString();
     }
 
@@ -39,7 +40,7 @@ public class SecuritiesSqlProvider {
      * @param securitiesCategoryId
      * @return
      */
-    public String queryList(String code, Integer securitiesCategoryId){
+    public String queryList(@Param("code") String code, @Param("securitiesCategoryId") Integer securitiesCategoryId){
         return new SQL(){{
             SQL sql = SELECT("id, " + COLUMNS)
                     .FROM("db_securities")
