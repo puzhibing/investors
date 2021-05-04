@@ -37,6 +37,9 @@ public interface SecuritiesMapper {
      * @return
      */
     @SelectProvider(type = SecuritiesSqlProvider.class, method = "queryList")
-    List<Securities> queryList(@Param("code") String code, @Param("securitiesCategoryId") Integer securitiesCategoryId);
+    List<Securities> queryList(@Param("code") String code, @Param("securitiesCategoryId") Integer securitiesCategoryId,
+                               @Param("pageNo") Integer pageNo, @Param("pageSize") Integer pageSize);
+
+
 
 }

@@ -19,10 +19,7 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 @Service
@@ -144,9 +141,9 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
          * 获取【深证证券交易所A、B股日行情】数据
          */
         SecuritiesCategory sz_a = securitiesCategoryService.queryByCode("sz_a");
-        List<Securities> securities1 = securitiesMapper.queryList(null, sz_a.getId());
+        List<Securities> securities1 = securitiesMapper.queryList(null, sz_a.getId(), null, null);
         SecuritiesCategory sz_b = securitiesCategoryService.queryByCode("sz_b");
-        List<Securities> securities2 = securitiesMapper.queryList(null, sz_b.getId());
+        List<Securities> securities2 = securitiesMapper.queryList(null, sz_b.getId(), null, null);
         securities1.addAll(securities2);
         for(Securities securities : securities1){
             String urlSZ = "http://www.szse.cn/api/market/ssjjhq/getTimeData?marketId=1&code=" + securities.getCode();
@@ -215,5 +212,49 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
 
 
 
+    }
+
+
+    /**
+     * 获取指定时间范围内的数据
+     * @param code
+     * @param date
+     * @return
+     * @throws Exception
+     */
+    @Override
+    public List<Map<String, Object>> queryAllData(String code, Integer securitiesCategoryId, String date, Integer pageNo, Integer pageSize) throws Exception {
+        Date start = null;
+        Date end = null;
+        pageNo = (pageNo - 1) * pageSize;
+        if(!"".equals(date) && null != date){
+            String[] split = date.split(" - ");
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            start = sdf.parse(split[0] + " 00:00:00");
+            end = sdf.parse(split[1] + " 23:59:59");
+        }
+        List<Securities> securities = securitiesMapper.queryList(code, securitiesCategoryId, pageNo, pageSize);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+        List<Map<String, Object>> datas = new ArrayList<>();//存储数据集合
+        for(Securities s : securities){
+            Map<String, Object> data = new HashMap<>();
+            Set<String> d = new HashSet<>();//存储日期
+            Map<String, Object> value = new HashMap<>();//存储数据
+            List<Double> v1 = new ArrayList<>();
+            List<Double> v2 = new ArrayList<>();
+            List<SecuritiesMarket> securitiesMarkets = securitiesMarketMapper.queryList(s.getId(), start, end);
+            Double avg = securitiesMarketMapper.queryClosingPriceAvg(s.getId());
+            for(SecuritiesMarket sm : securitiesMarkets){
+                d.add(sdf.format(sm.getTradeDate()));
+                v1.add(avg);
+                v2.add(Double.valueOf(sm.getClosingPrice()));
+            }
+            value.put("avg", v1);
+            value.put("data", v2);
+            data.put("date", d);
+            data.put("value", value);
+            datas.add(data);
+        }
+        return datas;
     }
 }

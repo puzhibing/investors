@@ -40,17 +40,23 @@ public class SecuritiesSqlProvider {
      * @param securitiesCategoryId
      * @return
      */
-    public String queryList(@Param("code") String code, @Param("securitiesCategoryId") Integer securitiesCategoryId){
+    public String queryList(@Param("code") String code, @Param("securitiesCategoryId") Integer securitiesCategoryId,
+                            @Param("pageNo") Integer pageNo, @Param("pageSize") Integer pageSize){
         return new SQL(){{
             SQL sql = SELECT("id, " + COLUMNS)
                     .FROM("db_securities")
                     .WHERE("1 = 1");
             if(null != code){
-                sql.WHERE("code = #{code}");
+                sql.WHERE("code like CONCAT('%', #{code}, '%')").OR().WHERE("systemCode like CONCAT('%', #{code}, '%')");
             }
             if(null != securitiesCategoryId){
                 sql.WHERE("securitiesCategoryId = #{securitiesCategoryId}");
             }
+            if(null != pageNo && null != pageSize){
+                sql.LIMIT("#{pageNo}, #{pageSize}");
+            }
         }}.toString();
     }
+
+
 }

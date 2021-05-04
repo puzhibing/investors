@@ -1,6 +1,10 @@
 package com.puzhibing.investors.dao.mapper;
 
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.jdbc.SQL;
+
+import java.util.Date;
+
 
 public class SecuritiesMarketSqlProvider {
 
@@ -33,5 +37,27 @@ public class SecuritiesMarketSqlProvider {
                     .FROM(TABLE)
                     .WHERE("securitiesId = #{securitiesId} and DATE_FORMAT(tradeDate, '%Y-%m-%d') = DATE_FORMAT(#{date}, '%Y-%m-%d')");
         }}.toString();
+    }
+
+
+    /**
+     * 获取时间范围内的数据
+     * @param securitiesId
+     * @param start
+     * @param end
+     * @return
+     */
+    public String queryList(@Param("securitiesId") Integer securitiesId, @Param("start") Date start,
+                            @Param("end") Date end){
+        SQL sql = new SQL() {{
+            SELECT("id, " + COLUMNS)
+                    .FROM(TABLE)
+                    .WHERE("securitiesId = #{securitiesId}");
+        }};
+        if(null != start && null != end){
+            sql.WHERE("tradeDate BETWEEN #{start} AND #{end}");
+        }
+        sql.ORDER_BY("tradeDate");
+        return sql.toString();
     }
 }
