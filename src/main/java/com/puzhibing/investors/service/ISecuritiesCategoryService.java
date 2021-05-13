@@ -12,4 +12,13 @@ public interface ISecuritiesCategoryService {
      * @throws Exception
      */
     SecuritiesCategory queryByCode(String code) throws Exception;
+
+
+    /**
+     * 根据id查询数据
+     * @param id
+     * @return
+     * @throws Exception
+     */
+    SecuritiesCategory selectById(Integer id) throws Exception;
 }

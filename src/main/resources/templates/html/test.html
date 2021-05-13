@@ -5,54 +5,119 @@
     <title>Title</title>
 </head>
 <body>
-<div id="main" style="width: 600px;height:400px;"></div>
+
 </body>
 <script type="text/javascript" src="/js/jquery-v3.6.0.js"></script>
 <script type="text/javascript" src="/echarts-5.0.2/echarts.js"></script>
 <script type="text/javascript">
-    // 基于准备好的dom，初始化echarts实例
-    var myChart = echarts.init(document.getElementById('main'));
+    var pageNo = 1;
 
-    // 指定图表的配置项和数据
-    option = {
-        title: {
-            text: '动态数据 + 时间坐标轴'
-        },
-        tooltip: {
-            trigger: 'axis',
-            formatter: function (params) {
-                params = params[0];
-                var date = new Date(params.name);
-                return date.getDate() + '/' + (date.getMonth() + 1) + '/' + date.getFullYear() + ' : ' + params.value[1];
-            },
-            axisPointer: {
-                animation: false
-            }
-        },
-        xAxis: {
-            type: 'category',
-            splitLine: {
-                show: false
-            }
-        },
-        yAxis: {
-            type: 'value',
-            boundaryGap: [0, '100%'],
-            splitLine: {
-                show: false
-            }
-        },
-        series: [{
-            name: '模拟数据',
-            type: 'line',
-            showSymbol: false,
-            hoverAnimation: false,
-            data: data
-        }]
-    };
+    $(function () {
+        getAllData(pageNo);
+    })
 
-    // 使用刚指定的配置项和数据显示图表。
-    myChart.setOption(option);
+
+    $(document).scroll(function() {
+        var scroH = $(document).scrollTop();  //滚动高度
+        var viewH = $(window).height();  //可见高度
+        var contentH = $(document).height();  //内容高度
+        if(scroH >100){  //距离顶部大于100px时
+        }
+        if (contentH - (scroH + viewH) <= 100){  //距离底部高度小于100px
+        }
+        if (contentH == (scroH + viewH)){  //滚动条滑到底部啦
+            pageNo++;
+            getAllData(pageNo);
+        }
+    });
+
+    function getAllData(pageNo) {
+        $.post("http://127.0.0.1:8080/test/queryAllData", {
+            pageNo: pageNo,
+            pageSize: 10
+        }, function (res) {
+            if(res.code == 200){
+                var data = res.data;
+                if(data.length > 0){
+                    build(data);
+                }
+            }else{
+                alert(res.msg);
+            }
+        });
+    }
+    
+    
+    function build(data) {
+        for(var i = 0; i < data.length; i++){
+            $('body').append('<div id="main' + (i + ((pageNo - 1) * 10)) + '" style="width: 600px;height:400px;"></div>');
+
+            var latitude = data[i].latitude;
+            var value = data[i].value;
+            var name = data[i].name;
+            // 基于准备好的dom，初始化echarts实例
+            var myChart = echarts.init(document.getElementById('main' + (i + ((pageNo - 1) * 10))));
+
+            // 指定图表的配置项和数据
+            option = {
+                title: {
+                    text: '折线图堆叠'
+                },
+                tooltip: {
+                    trigger: 'axis'
+                },
+                legend: {
+                    data: [name]
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                toolbox: {
+                    show: true,
+                    feature: {
+                        dataZoom: {
+                            yAxisIndex: 'none'
+                        },
+                        dataView: {readOnly: false},
+                        magicType: {type: ['line', 'bar']},
+                        restore: {},
+                        saveAsImage: {}
+                    }
+                },
+                xAxis: {
+                    type: 'category',
+                    data: latitude
+                },
+                yAxis: {
+                    type: 'value'
+                },
+                series: [
+                    {
+                        name: name,
+                        data: value,
+                        type: 'line',
+                        markPoint: {
+                            data: [
+                                {type: 'max', name: '最大值'},
+                                {type: 'min', name: '最小值'}
+                            ]
+                        },
+                        markLine: {
+                            data: [
+                                {type: 'average', name: '平均值'}
+                            ]
+                        }
+                    }
+                ]
+            };
+
+            // 使用刚指定的配置项和数据显示图表。
+            myChart.setOption(option);
+        }
+    }
 </script>
 
 </html>

@@ -17,4 +17,17 @@ public class SecuritiesCategorySqlProvider {
         }}.toString();
     }
 
+
+    /**
+     * 根据id查询数据
+     * @return
+     */
+    public String selectById(){
+        return new SQL(){{
+            SELECT("id, code, name, countryId")
+                    .FROM("db_securities_category")
+                    .WHERE("id = #{id}");
+        }}.toString();
+    }
+
 }

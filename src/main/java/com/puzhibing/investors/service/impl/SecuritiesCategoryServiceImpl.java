@@ -25,4 +25,15 @@ public class SecuritiesCategoryServiceImpl implements ISecuritiesCategoryService
     public SecuritiesCategory queryByCode(String code) throws Exception {
         return securitiesCategoryMapper.queryByCode(code);
     }
+
+    /**
+     * 根据id查询数据
+     * @param id
+     * @return
+     * @throws Exception
+     */
+    @Override
+    public SecuritiesCategory selectById(Integer id) throws Exception {
+        return securitiesCategoryMapper.selectById(id);
+    }
 }

@@ -18,4 +18,13 @@ public interface SecuritiesCategoryMapper {
      */
     @SelectProvider(type = SecuritiesCategorySqlProvider.class, method = "queryByCode")
     SecuritiesCategory queryByCode(@Param("code") String code);
+
+
+    /**
+     * 根据id查询数据
+     * @param id
+     * @return
+     */
+    @SelectProvider(type = SecuritiesCategorySqlProvider.class, method = "selectById")
+    SecuritiesCategory selectById(@Param("id") Integer id);
 }
