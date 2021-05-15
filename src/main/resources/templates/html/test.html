@@ -50,11 +50,12 @@
     
     function build(data) {
         for(var i = 0; i < data.length; i++){
-            $('body').append('<div id="main' + (i + ((pageNo - 1) * 10)) + '" style="width: 600px;height:400px;"></div>');
+            $('body').append('<div style="width: 100%"><div id="main' + (i + ((pageNo - 1) * 10)) + '" style="width: 60%;height:400px;"></div></div>');
 
             var latitude = data[i].latitude;
             var value = data[i].value;
             var name = data[i].name;
+            var startTime = data[i].startTime;
             // 基于准备好的dom，初始化echarts实例
             var myChart = echarts.init(document.getElementById('main' + (i + ((pageNo - 1) * 10))));
 
@@ -87,6 +88,11 @@
                         saveAsImage: {}
                     }
                 },
+                dataZoom: [{
+                    startValue: startTime
+                }, {
+                    type: 'inside'
+                }],
                 xAxis: {
                     type: 'category',
                     data: latitude

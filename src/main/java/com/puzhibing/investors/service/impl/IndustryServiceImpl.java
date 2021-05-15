@@ -5,7 +5,8 @@ import com.alibaba.fastjson.JSONArray;
 import com.puzhibing.investors.dao.IndustryMapper;
 import com.puzhibing.investors.pojo.Industry;
 import com.puzhibing.investors.service.IIndustryService;
-import com.puzhibing.investors.util.HttpClientUtil;
+import com.puzhibing.investors.util.http.HttpClientUtil;
+import com.puzhibing.investors.util.http.HttpResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -28,9 +29,15 @@ public class IndustryServiceImpl implements IIndustryService {
     @Override
     public void pullIndustry() throws Exception {
         String url = "http://vip.stock.finance.sina.com.cn/quotes_service/api/json_v2.php/Market_Center.getHQNodes";
-        String s = httpClientUtil.pushHttpRequset("GET", url, null, null, "json");
+        HttpResult httpResult = httpClientUtil.pushHttpRequset("GET", url, null, null, "json");
+        if(null == httpResult){
+            System.err.println("数据请求异常");
+        }
+        if(httpResult.getCode() != 200){
+            System.err.println(httpResult.getData());
+        }
         Map<String, String> map = new HashMap<>();
-        map.put("str", s);
+        map.put("str", httpResult.getData());
         map.put("pid", String.valueOf(0));
         saveIndustry(Arrays.asList(map));
     }

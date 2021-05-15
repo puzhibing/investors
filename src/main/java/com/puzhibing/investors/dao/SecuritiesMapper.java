@@ -50,4 +50,13 @@ public interface SecuritiesMapper {
     @SelectProvider(type = SecuritiesSqlProvider.class, method = "querySecuritiesList")
     List<Securities> querySecuritiesList(@Param("code") String code, @Param("securitiesCategoryCode") String securitiesCategoryCode);
 
+
+    /**
+     * 根据id获取数据
+     * @param id
+     * @return
+     */
+    @SelectProvider(type = SecuritiesSqlProvider.class, method = "selectById")
+    Securities selectById(@Param("id") Integer id);
+
 }

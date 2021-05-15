@@ -22,9 +22,9 @@ public class SecuritiesMarketController {
      */
     @ResponseBody
     @PostMapping("/synchronizeHistoricalData")
-    public ResultUtil synchronizeHistoricalData(){
+    public ResultUtil synchronizeHistoricalData(Integer id){
         try {
-            return securitiesMarketService.synchronizeHistoricalData();
+            return securitiesMarketService.synchronizeHistoricalData(id);
         }catch (Exception e){
             e.printStackTrace();
             return ResultUtil.runErr();

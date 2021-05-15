@@ -80,4 +80,17 @@ public class SecuritiesSqlProvider {
         }
         return sql.toString();
     }
+
+
+    /**
+     * 根据id查询数据
+     * @return
+     */
+    public String selectById(){
+        return new SQL(){{
+            SELECT("id, " + COLUMNS)
+                    .FROM(TABLE)
+                    .WHERE("id = #{id}");
+        }}.toString();
+    }
 }

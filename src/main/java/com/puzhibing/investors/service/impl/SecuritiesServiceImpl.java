@@ -8,7 +8,9 @@ import com.puzhibing.investors.pojo.Securities;
 import com.puzhibing.investors.pojo.SecuritiesCategory;
 import com.puzhibing.investors.service.ISecuritiesCategoryService;
 import com.puzhibing.investors.service.ISecuritiesService;
-import com.puzhibing.investors.util.HttpClientUtil;
+import com.puzhibing.investors.util.ResultUtil;
+import com.puzhibing.investors.util.http.HttpClientUtil;
+import com.puzhibing.investors.util.http.HttpResult;
 import org.jsoup.Jsoup;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -47,8 +49,14 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
         String urlSHA = "http://query.sse.com.cn/security/stock/getStockListData.do?stockType=1&pageHelp.cacheSize=1&pageHelp.beginPage=1&pageHelp.pageSize=" + pageSize + "&pageHelp.pageNo=1";
         Map<String, String> header = new HashMap<>();
         header.put("Referer", "http://www.sse.com.cn/");
-        String get = httpClientUtil.pushHttpRequset("GET", urlSHA, null, header, null);
-        JSONArray result = JSON.parseObject(get).getJSONArray("result");
+        HttpResult httpResult = httpClientUtil.pushHttpRequset("GET", urlSHA, null, header, null);
+        if(null == httpResult){
+            System.err.println("数据请求异常");
+        }
+        if(httpResult.getCode() != 200){
+            System.err.println(httpResult.getData());
+        }
+        JSONArray result = JSON.parseObject(httpResult.getData()).getJSONArray("result");
         SecuritiesCategory sh_a = securitiesCategoryService.queryByCode("sh_a");
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
         for(int i = 0; i < result.size(); i++){
@@ -77,8 +85,14 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
         String urlSHB = "http://query.sse.com.cn/security/stock/getStockListData.do?stockType=2&pageHelp.cacheSize=1&pageHelp.beginPage=1&pageHelp.pageSize=" + pageSize + "&pageHelp.pageNo=1";
         header = new HashMap<>();
         header.put("Referer", "http://www.sse.com.cn/");
-        get = httpClientUtil.pushHttpRequset("GET", urlSHB, null, header, null);
-        result = JSON.parseObject(get).getJSONArray("result");
+        httpResult = httpClientUtil.pushHttpRequset("GET", urlSHB, null, header, null);
+        if(null == httpResult){
+            System.err.println("数据请求异常");
+        }
+        if(httpResult.getCode() != 200){
+            System.err.println(httpResult.getData());
+        }
+        result = JSON.parseObject(httpResult.getData()).getJSONArray("result");
         SecuritiesCategory sh_b = securitiesCategoryService.queryByCode("sh_b");
         for(int i = 0; i < result.size(); i++){
             JSONObject jsonObject = result.getJSONObject(i);
@@ -106,8 +120,14 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
         while (true){
             String urlSZA = "http://www.szse.cn/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1110&TABKEY=tab1&PAGENO=" + l + "&PAGESIZE=20";
             header = new HashMap<>();
-            get = httpClientUtil.pushHttpRequset("GET", urlSZA, null, header, null);
-            result = JSON.parseArray(get).getJSONObject(0).getJSONArray("data");
+            httpResult = httpClientUtil.pushHttpRequset("GET", urlSZA, null, header, null);
+            if(null == httpResult){
+                System.err.println("数据请求异常");
+            }
+            if(httpResult.getCode() != 200){
+                System.err.println(httpResult.getData());
+            }
+            result = JSON.parseArray(httpResult.getData()).getJSONObject(0).getJSONArray("data");
             SecuritiesCategory sz_a = securitiesCategoryService.queryByCode("sz_a");
             for(int i = 0; i < result.size(); i++){
                 JSONObject jsonObject = result.getJSONObject(i);
@@ -141,8 +161,14 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
         while (true){
             String urlSZB = "http://www.szse.cn/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1110&TABKEY=tab2&PAGENO=" + l + "&PAGESIZE=20";
             header = new HashMap<>();
-            get = httpClientUtil.pushHttpRequset("GET", urlSZB, null, header, null);
-            result = JSON.parseArray(get).getJSONObject(1).getJSONArray("data");
+            httpResult = httpClientUtil.pushHttpRequset("GET", urlSZB, null, header, null);
+            if(null == httpResult){
+                System.err.println("数据请求异常");
+            }
+            if(httpResult.getCode() != 200){
+                System.err.println(httpResult.getData());
+            }
+            result = JSON.parseArray(httpResult.getData()).getJSONObject(1).getJSONArray("data");
             SecuritiesCategory sz_b = securitiesCategoryService.queryByCode("sz_b");
             for(int i = 0; i < result.size(); i++){
                 JSONObject jsonObject = result.getJSONObject(i);

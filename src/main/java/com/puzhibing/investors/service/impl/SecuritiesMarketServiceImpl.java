@@ -8,8 +8,9 @@ import com.puzhibing.investors.pojo.*;
 import com.puzhibing.investors.service.ISecuritiesCategoryService;
 import com.puzhibing.investors.service.ISecuritiesMarketService;
 import com.puzhibing.investors.util.DateUtil;
-import com.puzhibing.investors.util.HttpClientUtil;
+import com.puzhibing.investors.util.http.HttpClientUtil;
 import com.puzhibing.investors.util.ResultUtil;
+import com.puzhibing.investors.util.http.HttpResult;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -67,8 +68,14 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                 "cpxxsubtype%2Ccpxxprodusta&begin=0&end=" + pageSize;
         Map<String, String> header = new HashMap<>();
         header.put("Referer", "http://www.sse.com.cn/");
-        String get = httpClientUtil.pushHttpRequset("GET", urlSHA, null, header, null);
-        JSONObject jsonObject = JSON.parseObject(get);
+        HttpResult httpResult = httpClientUtil.pushHttpRequset("GET", urlSHA, null, header, null);
+        if(null == httpResult){
+            System.err.println("数据请求异常");
+        }
+        if(httpResult.getCode() != 200){
+            System.err.println(httpResult.getData());
+        }
+        JSONObject jsonObject = JSON.parseObject(httpResult.getData());
         String date = jsonObject.getString("date");
         JSONArray list = jsonObject.getJSONArray("list");
         SecuritiesCategory sh_a = securitiesCategoryService.queryByCode("sh_a");
@@ -115,8 +122,14 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                 "cpxxprodusta&begin=0&end=" + pageSize;
         header = new HashMap<>();
         header.put("Referer", "http://www.sse.com.cn/");
-        get = httpClientUtil.pushHttpRequset("GET", urlSHB, null, header, null);
-        jsonObject = JSON.parseObject(get);
+        httpResult = httpClientUtil.pushHttpRequset("GET", urlSHB, null, header, null);
+        if(null == httpResult){
+            System.err.println("数据请求异常");
+        }
+        if(httpResult.getCode() != 200){
+            System.err.println(httpResult.getData());
+        }
+        jsonObject = JSON.parseObject(httpResult.getData());
         date = jsonObject.getString("date");
         list = jsonObject.getJSONArray("list");
         SecuritiesCategory sh_b = securitiesCategoryService.queryByCode("sh_b");
@@ -162,8 +175,14 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
         for(Securities securities : securities1){
             String urlSZ = "http://www.szse.cn/api/market/ssjjhq/getTimeData?marketId=1&code=" + securities.getCode();
             header = new HashMap<>();
-            get = httpClientUtil.pushHttpRequset("GET", urlSZ, null, header, null);
-            JSONObject jsonObject1 = JSON.parseObject(get);
+            httpResult = httpClientUtil.pushHttpRequset("GET", urlSZ, null, header, null);
+            if(null == httpResult){
+                System.err.println("数据请求异常");
+            }
+            if(httpResult.getCode() != 200){
+                System.err.println(httpResult.getData());
+            }
+            JSONObject jsonObject1 = JSON.parseObject(httpResult.getData());
             jsonObject = jsonObject1.getJSONObject("data");
             SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd HH:mm");
             String datetime = jsonObject1.getString("datetime");
@@ -233,8 +252,14 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
         for(Securities securities : securities2){
             String urlSZ = "http://www.szse.cn/api/market/ssjjhq/getTimeData?marketId=1&code=" + securities.getCode();
             header = new HashMap<>();
-            get = httpClientUtil.pushHttpRequset("GET", urlSZ, null, header, null);
-            JSONObject jsonObject1 = JSON.parseObject(get);
+            httpResult = httpClientUtil.pushHttpRequset("GET", urlSZ, null, header, null);
+            if(null == httpResult){
+                System.err.println("数据请求异常");
+            }
+            if(httpResult.getCode() != 200){
+                System.err.println(httpResult.getData());
+            }
+            JSONObject jsonObject1 = JSON.parseObject(httpResult.getData());
             jsonObject = jsonObject1.getJSONObject("data");
             SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd HH:mm");
             String datetime = jsonObject1.getString("datetime");
@@ -317,18 +342,25 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
         List<Securities> securities = securitiesMapper.queryList(code, securitiesCategoryId, pageNo, pageSize);
         List<Map<String, Object>> list = new ArrayList<>();
         SimpleDateFormat sdf = new SimpleDateFormat("yyy-MM-dd");
+        SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy");
+        int y = Integer.valueOf(sdf1.format(new Date())) - 4;
         for(Securities s : securities){
             Map<String, Object> map = new HashMap<>();
             map.put("name", s.getName() + "(" + s.getCode() + ")");
             SecuritiesCategory securitiesCategory = securitiesCategoryService.selectById(s.getSecuritiesCategoryId());
             List<String> d = new ArrayList<>();
             List<Double> v = new ArrayList<>();
+            String startTime = "";
             switch (securitiesCategory.getCode()){
                 case "sh_a":
                     List<SHASecuritiesMarket> shaSecuritiesMarkets = shaSecuritiesMarketMapper.queryList(s.getId(), start, end);
                     for(SHASecuritiesMarket sha : shaSecuritiesMarkets){
                         d.add(sdf.format(sha.getTradeDate()));
                         v.add(Double.valueOf(sha.getClosingPrice()));
+                        int y1 = Integer.valueOf(sdf1.format(sha.getTradeDate())).intValue();
+                        if(!StringUtils.hasLength(startTime) && y == y1){
+                            startTime = sdf.format(sha.getTradeDate());
+                        }
                     }
                     break;
                 case "sh_b":
@@ -336,6 +368,10 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                     for(SHBSecuritiesMarket shb : shbSecuritiesMarkets){
                         d.add(sdf.format(shb.getTradeDate()));
                         v.add(Double.valueOf(shb.getClosingPrice()));
+                        int y1 = Integer.valueOf(sdf1.format(shb.getTradeDate())).intValue();
+                        if(!StringUtils.hasLength(startTime) && y == y1){
+                            startTime = sdf.format(shb.getTradeDate());
+                        }
                     }
                     break;
                 case "sz_a":
@@ -343,6 +379,10 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                     for(SZASecuritiesMarket sza : szaSecuritiesMarkets){
                         d.add(sdf.format(sza.getTradeDate()));
                         v.add(Double.valueOf(sza.getClosingPrice()));
+                        int y1 = Integer.valueOf(sdf1.format(sza.getTradeDate())).intValue();
+                        if(!StringUtils.hasLength(startTime) && y == y1){
+                            startTime = sdf.format(sza.getTradeDate());
+                        }
                     }
                     break;
                 case "sz_b":
@@ -350,11 +390,16 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                     for(SZBSecuritiesMarket szb : szbSecuritiesMarkets){
                         d.add(sdf.format(szb.getTradeDate()));
                         v.add(Double.valueOf(szb.getClosingPrice()));
+                        int y1 = Integer.valueOf(sdf1.format(szb.getTradeDate())).intValue();
+                        if(!StringUtils.hasLength(startTime) && y == y1){
+                            startTime = sdf.format(szb.getTradeDate());
+                        }
                     }
                     break;
             }
             map.put("latitude", d);
             map.put("value", v);
+            map.put("startTime", startTime);
             list.add(map);
         }
         return list;
@@ -366,120 +411,131 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
      * @throws Exception
      */
     @Override
-    public ResultUtil synchronizeHistoricalData() throws Exception {
-        List<Securities> sh_a = securitiesMapper.querySecuritiesList(null, "sh_a");
-        SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd");
-        for(Securities s : sh_a){
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy");
-            Date date = new Date();
-            Integer year = Integer.valueOf(sdf.format(date));//年份
-            Calendar calendar = Calendar.getInstance();
-            calendar.setTime(date);
-            while (true){
-                int quarter = DateUtil.createDate(date).QUARTER;//季节
-                boolean b = false;
-                while (true){
-                    String url = "http://quotes.money.163.com/trade/lsjysj_" + s.getCode() + ".html?year=" + year + "&season=" + quarter;
-                    String data = httpClientUtil.pushHttpRequset("GET", url, null, null, "json");
-                    Document document = Jsoup.parse(data);
-                    Element element = document.getElementsByClass("table_bg001").get(0);
-                    Elements tr = element.getElementsByTag("tr");
-                    if(tr.size() == 0){//没有数据
-                        b = false;
-                        break;
-                    }
-                    //解析数据
-                    for(int i = 0; i < tr.size(); i++){
-                        Elements td = tr.get(i).getElementsByTag("td");
-                        if(td.size() == 0){
-                            continue;
-                        }
-                        String rq = td.get(0).text();//日期
-                        String kpj = td.get(1).text();//开盘价
-                        String zgj = td.get(2).text();//最高价
-                        String zdj = td.get(3).text();//最低价
-                        String spj = td.get(4).text();//收盘价
-                        String zde = td.get(5).text();//涨跌额
-                        String zdf = td.get(6).text();//涨跌幅(%)
-                        String cjl = td.get(7).text().replaceAll(",", "");//成交量(手)
-                        String cjje = td.get(8).text().replaceAll(",", "");//成交金额(万元)
-                        String zf = td.get(9).text();//振幅(%)
-                        String hsl = td.get(10).text();//换手率(%)
-                        String sqspj = String.valueOf(Double.valueOf(spj) - Double.valueOf(zde));//上期收盘价
-
-                        SHASecuritiesMarket shaSecuritiesMarket = shaSecuritiesMarketMapper.queryBySecuritiesIdAndDate(s.getId(), sdf1.parse(rq));
-                        if(null != shaSecuritiesMarket){
-                            if(!StringUtils.hasLength(shaSecuritiesMarket.getLastClosingPrice())){
-                                shaSecuritiesMarket.setLastClosingPrice(sqspj);
-                            }
-                            if(!StringUtils.hasLength(shaSecuritiesMarket.getClosingPrice())){
-                                shaSecuritiesMarket.setClosingPrice(spj);
-                            }
-                            if(!StringUtils.hasLength(shaSecuritiesMarket.getRiseFallPrice())){
-                                shaSecuritiesMarket.setRiseFallPrice(zde);
-                            }
-                            if(!StringUtils.hasLength(shaSecuritiesMarket.getRiseFallRatio())){
-                                shaSecuritiesMarket.setRiseFallRatio(zdf);
-                            }
-                            if(!StringUtils.hasLength(shaSecuritiesMarket.getOpeningPrice())){
-                                shaSecuritiesMarket.setOpeningPrice(kpj);
-                            }
-                            if(!StringUtils.hasLength(shaSecuritiesMarket.getTopPrice())){
-                                shaSecuritiesMarket.setTopPrice(zgj);
-                            }
-                            if(!StringUtils.hasLength(shaSecuritiesMarket.getLowestPrice())){
-                                shaSecuritiesMarket.setLowestPrice(zdj);
-                            }
-                            if(!StringUtils.hasLength(shaSecuritiesMarket.getAmplitude())){
-                                shaSecuritiesMarket.setAmplitude(zf);
-                            }
-                            if(!StringUtils.hasLength(shaSecuritiesMarket.getVolume())){
-                                shaSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
-                            }
-                            if(!StringUtils.hasLength(shaSecuritiesMarket.getDealAmount())){
-                                shaSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
-                            }
-                            if(!StringUtils.hasLength(shaSecuritiesMarket.getTurnoverRate())){
-                                shaSecuritiesMarket.setTurnoverRate(hsl);
-                            }
-                            shaSecuritiesMarketMapper.update(shaSecuritiesMarket);
+    public ResultUtil synchronizeHistoricalData(Integer id) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Securities s = securitiesMapper.selectById(id);
+                    SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd");
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy");
+                    Date date = new Date();
+                    Integer year = Integer.valueOf(sdf.format(date));//年份
+                    Calendar calendar = Calendar.getInstance();
+                    calendar.setTime(date);
+                    while (true){
+                        int quarter = 0;
+                        if(year.intValue() == Integer.valueOf(sdf.format(date)).intValue()){
+                            quarter = DateUtil.createDate(date).QUARTER;//季节
                         }else{
-                            shaSecuritiesMarket.setSecuritiesId(s.getId());
-                            shaSecuritiesMarket.setTradeDate(sdf1.parse(rq));
-                            shaSecuritiesMarket.setLastClosingPrice(sqspj);
-                            shaSecuritiesMarket.setClosingPrice(spj);
-                            shaSecuritiesMarket.setRiseFallPrice(zde);
-                            shaSecuritiesMarket.setRiseFallRatio(zdf);
-                            shaSecuritiesMarket.setOpeningPrice(kpj);
-                            shaSecuritiesMarket.setTopPrice(zgj);
-                            shaSecuritiesMarket.setLowestPrice(zdj);
-                            shaSecuritiesMarket.setAmplitude(zf);
-                            shaSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
-                            shaSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
-                            shaSecuritiesMarket.setTurnoverRate(hsl);
-                            shaSecuritiesMarketMapper.insert(shaSecuritiesMarket);
+                            quarter = 4;
                         }
+                        boolean b = false;
+                        while (true){
+                            String url = "http://quotes.money.163.com/trade/lsjysj_" + s.getCode() + ".html?year=" + year + "&season=" + quarter;
+                            HttpResult httpResult = httpClientUtil.pushHttpRequset("GET", url, null, null, "json");
+                            if(null == httpResult){
+                                System.err.println("数据请求异常");
+                            }
+                            if(httpResult.getCode() != 200){
+                                System.err.println(httpResult.getData());
+                            }
+                            Document document = Jsoup.parse(httpResult.getData());
+                            Element element = document.getElementsByClass("table_bg001").get(0);
+                            Elements tr = element.getElementsByTag("tr");
+                            if(tr.size() == 1){//没有数据
+                                b = true;
+                                break;
+                            }
+                            //解析数据
+                            for(int i = 0; i < tr.size(); i++){
+                                Elements td = tr.get(i).getElementsByTag("td");
+                                if(td.size() == 0){
+                                    continue;
+                                }
+                                String rq = td.get(0).text().equals("--") ? "0" : td.get(0).text();//日期
+                                String kpj = td.get(1).text().equals("--") ? "0" : td.get(1).text();//开盘价
+                                String zgj = td.get(2).text().equals("--") ? "0" : td.get(2).text();//最高价
+                                String zdj = td.get(3).text().equals("--") ? "0" : td.get(3).text();//最低价
+                                String spj = td.get(4).text().equals("--") ? "0" : td.get(4).text();//收盘价
+                                String zde = td.get(5).text().equals("--") ? "0" : td.get(5).text();//涨跌额
+                                String zdf = td.get(6).text().equals("--") ? "0" : td.get(6).text();//涨跌幅(%)
+                                String cjl = td.get(7).text().equals("--") ? "0" : td.get(7).text().replaceAll(",", "");//成交量(手)
+                                String cjje = td.get(8).text().equals("--") ? "0" : td.get(8).text().replaceAll(",", "");//成交金额(万元)
+                                String zf = td.get(9).text().equals("--") ? "0" : td.get(9).text();//振幅(%)
+                                String hsl = td.get(10).text().equals("--") ? "0" : td.get(10).text();//换手率(%)
+                                String sqspj = new BigDecimal(spj).subtract(new BigDecimal(zde)).setScale(2, RoundingMode.HALF_EVEN).toString();//上期收盘价
 
+                                SHASecuritiesMarket shaSecuritiesMarket = shaSecuritiesMarketMapper.queryBySecuritiesIdAndDate(s.getId(), sdf1.parse(rq));
+                                if(null != shaSecuritiesMarket){
+                                    if(!StringUtils.hasLength(shaSecuritiesMarket.getLastClosingPrice())){
+                                        shaSecuritiesMarket.setLastClosingPrice(sqspj);
+                                    }
+                                    if(!StringUtils.hasLength(shaSecuritiesMarket.getClosingPrice())){
+                                        shaSecuritiesMarket.setClosingPrice(spj);
+                                    }
+                                    if(!StringUtils.hasLength(shaSecuritiesMarket.getRiseFallPrice())){
+                                        shaSecuritiesMarket.setRiseFallPrice(zde);
+                                    }
+                                    if(!StringUtils.hasLength(shaSecuritiesMarket.getRiseFallRatio())){
+                                        shaSecuritiesMarket.setRiseFallRatio(zdf);
+                                    }
+                                    if(!StringUtils.hasLength(shaSecuritiesMarket.getOpeningPrice())){
+                                        shaSecuritiesMarket.setOpeningPrice(kpj);
+                                    }
+                                    if(!StringUtils.hasLength(shaSecuritiesMarket.getTopPrice())){
+                                        shaSecuritiesMarket.setTopPrice(zgj);
+                                    }
+                                    if(!StringUtils.hasLength(shaSecuritiesMarket.getLowestPrice())){
+                                        shaSecuritiesMarket.setLowestPrice(zdj);
+                                    }
+                                    if(!StringUtils.hasLength(shaSecuritiesMarket.getAmplitude())){
+                                        shaSecuritiesMarket.setAmplitude(zf);
+                                    }
+                                    if(!StringUtils.hasLength(shaSecuritiesMarket.getVolume())){
+                                        shaSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
+                                    }
+                                    if(!StringUtils.hasLength(shaSecuritiesMarket.getDealAmount())){
+                                        shaSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
+                                    }
+                                    if(!StringUtils.hasLength(shaSecuritiesMarket.getTurnoverRate())){
+                                        shaSecuritiesMarket.setTurnoverRate(hsl);
+                                    }
+                                    shaSecuritiesMarketMapper.update(shaSecuritiesMarket);
+                                }else{
+                                    shaSecuritiesMarket = new SHASecuritiesMarket();
+                                    shaSecuritiesMarket.setSecuritiesId(s.getId());
+                                    shaSecuritiesMarket.setTradeDate(sdf1.parse(rq));
+                                    shaSecuritiesMarket.setLastClosingPrice(sqspj);
+                                    shaSecuritiesMarket.setClosingPrice(spj);
+                                    shaSecuritiesMarket.setRiseFallPrice(zde);
+                                    shaSecuritiesMarket.setRiseFallRatio(zdf);
+                                    shaSecuritiesMarket.setOpeningPrice(kpj);
+                                    shaSecuritiesMarket.setTopPrice(zgj);
+                                    shaSecuritiesMarket.setLowestPrice(zdj);
+                                    shaSecuritiesMarket.setAmplitude(zf);
+                                    shaSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
+                                    shaSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
+                                    shaSecuritiesMarket.setTurnoverRate(hsl);
+                                    shaSecuritiesMarketMapper.insert(shaSecuritiesMarket);
+                                }
+
+                            }
+                            quarter--;
+                            if(quarter == 0){
+                                break;
+                            }
+                        }
+                        if(b){//没有数据可采集。
+                            break;
+                        }
+                        year--;
                     }
-
-
-
-
-                    quarter--;
-                    if(quarter == 0){
-                        break;
-                    }
+                }catch (Exception e){
+                    e.printStackTrace();
                 }
-                if(b){//没有数据可采集。
-                    break;
-                }
-                year--;
             }
-
-
-        }
-
-
-        return null;
+        }).start();
+        return ResultUtil.success();
     }
 }

@@ -1,4 +1,4 @@
-package com.puzhibing.investors.util;
+package com.puzhibing.investors.util.http;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.NameValuePair;
@@ -149,8 +149,7 @@ public class HttpClientUtil {
      * @param contentType   参数请求方式form/json
      * @return
      */
-    public String pushHttpRequset(String mothed, String url, Map<String, Object> params, Map<String, String> header, String contentType){
-        String content = null;
+    public HttpResult pushHttpRequset(String mothed, String url, Map<String, Object> params, Map<String, String> header, String contentType){
         switch (mothed){
             case "GET":
                 this.setGetHttpRequset(url, params, header);
@@ -159,33 +158,19 @@ public class HttpClientUtil {
                 this.setPostHttpRequset(url, params, header, contentType);
                 break;
         }
-        if(httpResponse.getStatusLine().getStatusCode() == 200){
-            try {
-                content = EntityUtils.toString(httpResponse.getEntity());
-                this.close();
-                return content;
-            } catch (IOException e) {
-                e.printStackTrace();
-                this.close();
-            }
-        }
-        if(httpResponse.getStatusLine().getStatusCode() == 201){
-            content = "{\"status\":201}";
+        HttpResult httpResult = null;
+        try {
+            int statusCode = httpResponse.getStatusLine().getStatusCode();
+            String content = EntityUtils.toString(httpResponse.getEntity(), "UTF-8");
+            System.err.println(statusCode);
+            httpResult = HttpResult.getHttpResult(statusCode, content);
             this.close();
-            return content;
-        }else{
-            try {
-                System.err.println("返回状态码：" + httpResponse.getStatusLine() + "。");
-                content = EntityUtils.toString(httpResponse.getEntity());
-                this.close();
-                return content;
-            } catch (IOException e) {
-                e.printStackTrace();
-                this.close();
-            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            this.close();
         }
         this.close();
-        return content;
+        return httpResult;
     }
 
 
@@ -196,12 +181,13 @@ public class HttpClientUtil {
      * @param header    自定义请求头
      * @return
      */
-    public String pushHttpRequsetXml(String url, String xml, Map<String, String> header){
+    public HttpResult pushHttpRequsetXml(String url, String xml, Map<String, String> header){
         HttpPost httpPost = new HttpPost(url);
         for(String key : header.keySet()){
             httpPost.setHeader(key, header.get(key));
         }
         httpPost.setHeader("Content-Type", "application/xml");
+        HttpResult httpResult = null;
         try {
             httpPost.setEntity(new StringEntity(xml, "UTF-8"));
             this.getHttpCline();
@@ -209,33 +195,20 @@ public class HttpClientUtil {
                 this.getHttpCline();
             }
             httpResponse = this.httpClient.execute(httpPost);
-            String content = null;
-            if(httpResponse.getStatusLine().getStatusCode() == 200){
-                try {
-                    content = EntityUtils.toString(httpResponse.getEntity(), "UTF-8");
-                    this.close();
-                    return content;
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    this.close();
-                }
-            }else{
-                try {
-                    content = "返回状态码：" + httpResponse.getStatusLine() + "。" + EntityUtils.toString(httpResponse.getEntity());
-                    this.close();
-                    return content;
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    this.close();
-                }
+            try {
+                int statusCode = httpResponse.getStatusLine().getStatusCode();
+                String content = EntityUtils.toString(httpResponse.getEntity(), "UTF-8");
+                httpResult = HttpResult.getHttpResult(statusCode, content);
+                this.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+                this.close();
             }
-            this.close();
-            return content;
         } catch (IOException e) {
             e.printStackTrace();
             this.close();
         }
-        return null;
+        return httpResult;
     }
 
 
