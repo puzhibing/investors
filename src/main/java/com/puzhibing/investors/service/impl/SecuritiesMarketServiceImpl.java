@@ -349,14 +349,16 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             map.put("name", s.getName() + "(" + s.getCode() + ")");
             SecuritiesCategory securitiesCategory = securitiesCategoryService.selectById(s.getSecuritiesCategoryId());
             List<String> d = new ArrayList<>();
-            List<Double> v = new ArrayList<>();
+            List<Double> day = new ArrayList<>();
+            List<Double> h = new ArrayList<>();
             String startTime = "";
             switch (securitiesCategory.getCode()){
                 case "sh_a":
                     List<SHASecuritiesMarket> shaSecuritiesMarkets = shaSecuritiesMarketMapper.queryList(s.getId(), start, end);
                     for(SHASecuritiesMarket sha : shaSecuritiesMarkets){
                         d.add(sdf.format(sha.getTradeDate()));
-                        v.add(Double.valueOf(sha.getClosingPrice()));
+                        day.add(Double.valueOf(sha.getClosingPrice()));//收盘价
+                        h.add(null == sha.getTurnoverRate() ? 0 : Double.valueOf(sha.getTurnoverRate()));//换手率
                         int y1 = Integer.valueOf(sdf1.format(sha.getTradeDate())).intValue();
                         if(!StringUtils.hasLength(startTime) && y == y1){
                             startTime = sdf.format(sha.getTradeDate());
@@ -367,7 +369,8 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                     List<SHBSecuritiesMarket> shbSecuritiesMarkets = shbSecuritiesMarketMapper.queryList(s.getId(), start, end);
                     for(SHBSecuritiesMarket shb : shbSecuritiesMarkets){
                         d.add(sdf.format(shb.getTradeDate()));
-                        v.add(Double.valueOf(shb.getClosingPrice()));
+                        day.add(Double.valueOf(shb.getClosingPrice()));//收盘价
+                        h.add(null == shb.getTurnoverRate() ? 0 : Double.valueOf(shb.getTurnoverRate()));//换手率
                         int y1 = Integer.valueOf(sdf1.format(shb.getTradeDate())).intValue();
                         if(!StringUtils.hasLength(startTime) && y == y1){
                             startTime = sdf.format(shb.getTradeDate());
@@ -378,7 +381,8 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                     List<SZASecuritiesMarket> szaSecuritiesMarkets = szaSecuritiesMarketMapper.queryList(s.getId(), start, end);
                     for(SZASecuritiesMarket sza : szaSecuritiesMarkets){
                         d.add(sdf.format(sza.getTradeDate()));
-                        v.add(Double.valueOf(sza.getClosingPrice()));
+                        day.add(Double.valueOf(sza.getClosingPrice()));//收盘价
+                        h.add(null == sza.getTurnoverRate() ? 0 : Double.valueOf(sza.getTurnoverRate()));//换手率
                         int y1 = Integer.valueOf(sdf1.format(sza.getTradeDate())).intValue();
                         if(!StringUtils.hasLength(startTime) && y == y1){
                             startTime = sdf.format(sza.getTradeDate());
@@ -389,7 +393,8 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                     List<SZBSecuritiesMarket> szbSecuritiesMarkets = szbSecuritiesMarketMapper.queryList(s.getId(), start, end);
                     for(SZBSecuritiesMarket szb : szbSecuritiesMarkets){
                         d.add(sdf.format(szb.getTradeDate()));
-                        v.add(Double.valueOf(szb.getClosingPrice()));
+                        day.add(Double.valueOf(szb.getClosingPrice()));//收盘价
+                        h.add(null == szb.getTurnoverRate() ? 0 : Double.valueOf(szb.getTurnoverRate()));//换手率
                         int y1 = Integer.valueOf(sdf1.format(szb.getTradeDate())).intValue();
                         if(!StringUtils.hasLength(startTime) && y == y1){
                             startTime = sdf.format(szb.getTradeDate());
@@ -397,8 +402,10 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                     }
                     break;
             }
+            map.put("id", s.getId());
             map.put("latitude", d);
-            map.put("value", v);
+            map.put("closingPrice", day);
+            map.put("turnoverRate", h);
             map.put("startTime", startTime);
             list.add(map);
         }

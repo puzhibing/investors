@@ -33,6 +33,10 @@ public class HttpClientUtil {
 
     private CloseableHttpResponse httpResponse;
 
+    private HttpGet httpGet;
+
+    private HttpPost httpPost;
+
     private RequestConfig requestConfig;
 
 
@@ -68,7 +72,7 @@ public class HttpClientUtil {
      * @param params    请求参数
      */
     private void setPostHttpRequset(String url, Map<String, Object> params, Map<String, String> header, String contentType){
-        HttpPost httpPost = new HttpPost(url);
+        httpPost = new HttpPost(url);
         httpPost.setConfig(this.getRequestConfig());
         if(null != header){
             for(String key : header.keySet()){
@@ -121,7 +125,7 @@ public class HttpClientUtil {
             }
             p = "?" + sb.substring(0, sb.length() - 1);
         }
-        HttpGet httpGet = new HttpGet(url + p);
+        httpGet = new HttpGet(url + p);
         if(null != header){
             for(String key : header.keySet()){
                 httpGet.setHeader(key, header.get(key));
@@ -218,6 +222,12 @@ public class HttpClientUtil {
      */
     private void close(){
         try {
+            if(null != httpGet){
+                httpGet.releaseConnection();
+            }
+            if(null != httpPost){
+                httpPost.releaseConnection();
+            }
             if(null != httpClient){
                 httpClient.close();
             }
@@ -228,6 +238,12 @@ public class HttpClientUtil {
             e.printStackTrace();
         }finally {
             try {
+                if(null != httpGet){
+                    httpGet.releaseConnection();
+                }
+                if(null != httpPost){
+                    httpPost.releaseConnection();
+                }
                 if(null != httpClient){
                     httpClient.close();
                 }

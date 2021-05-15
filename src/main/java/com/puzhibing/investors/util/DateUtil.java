@@ -18,6 +18,8 @@ public class DateUtil {
 
     public Integer WEEK;//周
 
+    public Integer WEEK_OF_MONTH;//月中的几周
+
     public Integer DAY;//天
 
     public Integer HOUR;//小时
@@ -46,6 +48,7 @@ public class DateUtil {
         dateUtil.HOUR = calendar.get(Calendar.HOUR_OF_DAY);
         dateUtil.MINUTE = calendar.get(Calendar.MINUTE);
         dateUtil.SECOND = calendar.get(Calendar.SECOND);
+        dateUtil.WEEK_OF_MONTH = calendar.get(Calendar.WEEK_OF_MONTH);
         return dateUtil;
     }
 
