@@ -1,5 +1,6 @@
 package com.puzhibing.investors.dao.mapper;
 
+import com.puzhibing.investors.pojo.SZASecuritiesMarket;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.jdbc.SQL;
 
@@ -9,7 +10,7 @@ import java.util.Date;
 public class SZASecuritiesMarketSqlProvider {
 
     private final String COLUMNS = "securitiesId, tradeDate, lastClosingPrice, closingPrice, riseFallPrice, riseFallRatio, " +
-            "openingPrice, topPrice, lowestPrice, amplitude, volume, dealAmount";
+            "openingPrice, topPrice, lowestPrice, amplitude, volume, dealAmount, turnoverRate";
 
     private final String TABLE = "db_sz_a_securities_market";
 
@@ -22,7 +23,7 @@ public class SZASecuritiesMarketSqlProvider {
             INSERT_INTO(TABLE)
                     .INTO_COLUMNS(COLUMNS)
                     .INTO_VALUES("#{securitiesId}, #{tradeDate}, #{lastClosingPrice}, #{closingPrice}, #{riseFallPrice}, #{riseFallRatio}, " +
-                            "#{openingPrice}, #{topPrice}, #{lowestPrice}, #{amplitude}, #{volume}, #{dealAmount}");
+                            "#{openingPrice}, #{topPrice}, #{lowestPrice}, #{amplitude}, #{volume}, #{dealAmount}, #{turnoverRate}");
         }}.toString();
     }
 
@@ -59,5 +60,21 @@ public class SZASecuritiesMarketSqlProvider {
         }
         sql.ORDER_BY("tradeDate");
         return sql.toString();
+    }
+
+
+
+    /**
+     * 修改数据
+     * @return
+     */
+    public String update(){
+        return new SQL(){{
+            UPDATE(TABLE)
+                    .SET("securitiesId = #{securitiesId}, tradeDate = #{tradeDate}, lastClosingPrice = #{lastClosingPrice}, closingPrice = #{closingPrice}, " +
+                            "riseFallPrice = #{riseFallPrice}, riseFallRatio = #{riseFallRatio}, openingPrice = #{openingPrice}, topPrice = #{topPrice}, lowestPrice = #{lowestPrice}, " +
+                            "amplitude = #{amplitude}, volume = #{volume}, dealAmount = #{dealAmount}, turnoverRate = #{turnoverRate}")
+                    .WHERE("id = #{id}");
+        }}.toString();
     }
 }

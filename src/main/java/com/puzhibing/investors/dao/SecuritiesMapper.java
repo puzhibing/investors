@@ -41,11 +41,13 @@ public interface SecuritiesMapper {
                                @Param("pageNo") Integer pageNo, @Param("pageSize") Integer pageSize);
 
 
-
-
-
-
-
-
+    /**
+     * 查询数据列表
+     * @param code
+     * @param securitiesCategoryCode
+     * @return
+     */
+    @SelectProvider(type = SecuritiesSqlProvider.class, method = "querySecuritiesList")
+    List<Securities> querySecuritiesList(@Param("code") String code, @Param("securitiesCategoryCode") String securitiesCategoryCode);
 
 }

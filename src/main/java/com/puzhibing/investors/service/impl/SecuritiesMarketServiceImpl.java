@@ -7,9 +7,16 @@ import com.puzhibing.investors.dao.*;
 import com.puzhibing.investors.pojo.*;
 import com.puzhibing.investors.service.ISecuritiesCategoryService;
 import com.puzhibing.investors.service.ISecuritiesMarketService;
+import com.puzhibing.investors.util.DateUtil;
 import com.puzhibing.investors.util.HttpClientUtil;
+import com.puzhibing.investors.util.ResultUtil;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
@@ -351,5 +358,128 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             list.add(map);
         }
         return list;
+    }
+
+    /**
+     * 同步历史交易数据
+     * @return
+     * @throws Exception
+     */
+    @Override
+    public ResultUtil synchronizeHistoricalData() throws Exception {
+        List<Securities> sh_a = securitiesMapper.querySecuritiesList(null, "sh_a");
+        SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd");
+        for(Securities s : sh_a){
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy");
+            Date date = new Date();
+            Integer year = Integer.valueOf(sdf.format(date));//年份
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(date);
+            while (true){
+                int quarter = DateUtil.createDate(date).QUARTER;//季节
+                boolean b = false;
+                while (true){
+                    String url = "http://quotes.money.163.com/trade/lsjysj_" + s.getCode() + ".html?year=" + year + "&season=" + quarter;
+                    String data = httpClientUtil.pushHttpRequset("GET", url, null, null, "json");
+                    Document document = Jsoup.parse(data);
+                    Element element = document.getElementsByClass("table_bg001").get(0);
+                    Elements tr = element.getElementsByTag("tr");
+                    if(tr.size() == 0){//没有数据
+                        b = false;
+                        break;
+                    }
+                    //解析数据
+                    for(int i = 0; i < tr.size(); i++){
+                        Elements td = tr.get(i).getElementsByTag("td");
+                        if(td.size() == 0){
+                            continue;
+                        }
+                        String rq = td.get(0).text();//日期
+                        String kpj = td.get(1).text();//开盘价
+                        String zgj = td.get(2).text();//最高价
+                        String zdj = td.get(3).text();//最低价
+                        String spj = td.get(4).text();//收盘价
+                        String zde = td.get(5).text();//涨跌额
+                        String zdf = td.get(6).text();//涨跌幅(%)
+                        String cjl = td.get(7).text().replaceAll(",", "");//成交量(手)
+                        String cjje = td.get(8).text().replaceAll(",", "");//成交金额(万元)
+                        String zf = td.get(9).text();//振幅(%)
+                        String hsl = td.get(10).text();//换手率(%)
+                        String sqspj = String.valueOf(Double.valueOf(spj) - Double.valueOf(zde));//上期收盘价
+
+                        SHASecuritiesMarket shaSecuritiesMarket = shaSecuritiesMarketMapper.queryBySecuritiesIdAndDate(s.getId(), sdf1.parse(rq));
+                        if(null != shaSecuritiesMarket){
+                            if(!StringUtils.hasLength(shaSecuritiesMarket.getLastClosingPrice())){
+                                shaSecuritiesMarket.setLastClosingPrice(sqspj);
+                            }
+                            if(!StringUtils.hasLength(shaSecuritiesMarket.getClosingPrice())){
+                                shaSecuritiesMarket.setClosingPrice(spj);
+                            }
+                            if(!StringUtils.hasLength(shaSecuritiesMarket.getRiseFallPrice())){
+                                shaSecuritiesMarket.setRiseFallPrice(zde);
+                            }
+                            if(!StringUtils.hasLength(shaSecuritiesMarket.getRiseFallRatio())){
+                                shaSecuritiesMarket.setRiseFallRatio(zdf);
+                            }
+                            if(!StringUtils.hasLength(shaSecuritiesMarket.getOpeningPrice())){
+                                shaSecuritiesMarket.setOpeningPrice(kpj);
+                            }
+                            if(!StringUtils.hasLength(shaSecuritiesMarket.getTopPrice())){
+                                shaSecuritiesMarket.setTopPrice(zgj);
+                            }
+                            if(!StringUtils.hasLength(shaSecuritiesMarket.getLowestPrice())){
+                                shaSecuritiesMarket.setLowestPrice(zdj);
+                            }
+                            if(!StringUtils.hasLength(shaSecuritiesMarket.getAmplitude())){
+                                shaSecuritiesMarket.setAmplitude(zf);
+                            }
+                            if(!StringUtils.hasLength(shaSecuritiesMarket.getVolume())){
+                                shaSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
+                            }
+                            if(!StringUtils.hasLength(shaSecuritiesMarket.getDealAmount())){
+                                shaSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
+                            }
+                            if(!StringUtils.hasLength(shaSecuritiesMarket.getTurnoverRate())){
+                                shaSecuritiesMarket.setTurnoverRate(hsl);
+                            }
+                            shaSecuritiesMarketMapper.update(shaSecuritiesMarket);
+                        }else{
+                            shaSecuritiesMarket.setSecuritiesId(s.getId());
+                            shaSecuritiesMarket.setTradeDate(sdf1.parse(rq));
+                            shaSecuritiesMarket.setLastClosingPrice(sqspj);
+                            shaSecuritiesMarket.setClosingPrice(spj);
+                            shaSecuritiesMarket.setRiseFallPrice(zde);
+                            shaSecuritiesMarket.setRiseFallRatio(zdf);
+                            shaSecuritiesMarket.setOpeningPrice(kpj);
+                            shaSecuritiesMarket.setTopPrice(zgj);
+                            shaSecuritiesMarket.setLowestPrice(zdj);
+                            shaSecuritiesMarket.setAmplitude(zf);
+                            shaSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
+                            shaSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
+                            shaSecuritiesMarket.setTurnoverRate(hsl);
+                            shaSecuritiesMarketMapper.insert(shaSecuritiesMarket);
+                        }
+
+                    }
+
+
+
+
+                    quarter--;
+                    if(quarter == 0){
+                        break;
+                    }
+                }
+                if(b){//没有数据可采集。
+                    break;
+                }
+                year--;
+            }
+
+
+        }
+
+
+        return null;
     }
 }

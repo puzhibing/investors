@@ -51,4 +51,13 @@ public interface SHBSecuritiesMarketMapper {
     @Select("select avg(closingPrice) from db_sh_b_securities_market where securitiesId = #{securitiesId}")
     Double queryClosingPriceAvg(@Param("securitiesId") Integer securitiesId);
 
+
+
+    /**
+     * 修改数据
+     * @param shbSecuritiesMarket
+     */
+    @UpdateProvider(type = SHBSecuritiesMarketSqlProvider.class, method = "update")
+    void update(SHBSecuritiesMarket shbSecuritiesMarket);
+
 }

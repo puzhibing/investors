@@ -7,6 +7,8 @@ public class SecuritiesSqlProvider {
 
     private final String COLUMNS = "systemCode, code, securitiesCategoryId, name, marketTime, marketAddress";
 
+    private final String TABLE = "db_securities";
+
 
     /**
      * 添加数据
@@ -14,7 +16,7 @@ public class SecuritiesSqlProvider {
      */
     public String insert(){
         return new SQL(){{
-            INSERT_INTO("db_securities")
+            INSERT_INTO(TABLE)
                     .INTO_COLUMNS(COLUMNS)
                     .INTO_VALUES("#{systemCode}, #{code}, #{securitiesCategoryId}, #{name}, #{marketTime}, #{marketAddress}");
         }}.toString();
@@ -28,7 +30,7 @@ public class SecuritiesSqlProvider {
     public String queryByCodeAndSecuritiesCategory(){
         return new SQL(){{
             SELECT("id, " + COLUMNS)
-                    .FROM("db_securities")
+                    .FROM(TABLE)
                     .WHERE("code = #{code} and securitiesCategoryId = #{securitiesCategoryId}");
         }}.toString();
     }
@@ -44,7 +46,7 @@ public class SecuritiesSqlProvider {
                             @Param("pageNo") Integer pageNo, @Param("pageSize") Integer pageSize){
         return new SQL(){{
             SQL sql = SELECT("id, " + COLUMNS)
-                    .FROM("db_securities")
+                    .FROM(TABLE)
                     .WHERE("1 = 1");
             if(null != code){
                 sql.WHERE("code like CONCAT('%', #{code}, '%')").OR().WHERE("systemCode like CONCAT('%', #{code}, '%')");
@@ -59,4 +61,23 @@ public class SecuritiesSqlProvider {
     }
 
 
+    /**
+     * 查询数据列表
+     * @param code
+     * @param securitiesCategoryCode
+     * @return
+     */
+    public String querySecuritiesList(@Param("code") String code, @Param("securitiesCategoryCode") String securitiesCategoryCode){
+        SQL sql = new SQL();
+        sql.SELECT("id, " + COLUMNS)
+                .FROM(TABLE)
+                .WHERE("1 = 1");
+        if(null != code && !"".equals(code)){
+            sql.WHERE("code like CONCAT('%', #{code}, '%')").OR().WHERE("systemCode like CONCAT('%', #{code}, '%')");
+        }
+        if(null != securitiesCategoryCode && !"".equals(securitiesCategoryCode)){
+            sql.WHERE("securitiesCategoryId in (select id from db_securities_category where code like CONCAT('%', #{securitiesCategoryCode}, '%'))");
+        }
+        return sql.toString();
+    }
 }

@@ -61,4 +61,8 @@ public class SZASecuritiesMarket {
      * 成交金额（元）
      */
     private String dealAmount;
+    /**
+     * 换手率（%）
+     */
+    private String turnoverRate;
 }

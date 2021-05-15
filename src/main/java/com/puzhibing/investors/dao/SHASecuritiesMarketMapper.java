@@ -52,4 +52,12 @@ public interface SHASecuritiesMarketMapper {
     Double queryClosingPriceAvg(@Param("securitiesId") Integer securitiesId);
 
 
+    /**
+     * 修改数据
+     * @param shaSecuritiesMarket
+     */
+    @UpdateProvider(type = SHASecuritiesMarketSqlProvider.class, method = "update")
+    void update(SHASecuritiesMarket shaSecuritiesMarket);
+
+
 }
