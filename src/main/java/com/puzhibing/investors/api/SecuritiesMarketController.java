@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
  * 交易数据
  */
 @RestController
+@CrossOrigin
 @RequestMapping("/securitiesMarket")
 public class SecuritiesMarketController {
 

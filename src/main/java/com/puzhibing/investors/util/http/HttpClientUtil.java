@@ -35,6 +35,10 @@ public class HttpClientUtil {
 
     private RequestConfig requestConfig;
 
+    private HttpGet httpGet;
+
+    private HttpPost httpPost;
+
 
     /**
      * 创建一个httpClient对象
@@ -68,7 +72,7 @@ public class HttpClientUtil {
      * @param params    请求参数
      */
     private void setPostHttpRequset(String url, Map<String, Object> params, Map<String, String> header, String contentType){
-        HttpPost httpPost = new HttpPost(url);
+        httpPost = new HttpPost(url);
         httpPost.setConfig(this.getRequestConfig());
         if(null != header){
             for(String key : header.keySet()){
@@ -121,7 +125,7 @@ public class HttpClientUtil {
             }
             p = "?" + sb.substring(0, sb.length() - 1);
         }
-        HttpGet httpGet = new HttpGet(url + p);
+        httpGet = new HttpGet(url + p);
         if(null != header){
             for(String key : header.keySet()){
                 httpGet.setHeader(key, header.get(key));
@@ -182,7 +186,7 @@ public class HttpClientUtil {
      * @return
      */
     public HttpResult pushHttpRequsetXml(String url, String xml, Map<String, String> header){
-        HttpPost httpPost = new HttpPost(url);
+        httpPost = new HttpPost(url);
         for(String key : header.keySet()){
             httpPost.setHeader(key, header.get(key));
         }
@@ -218,21 +222,27 @@ public class HttpClientUtil {
      */
     private void close(){
         try {
-            if(null != httpClient){
-                httpClient.close();
-            }
             if(null != httpResponse){
                 httpResponse.close();
+            }
+            if(null != httpPost){
+                httpPost.releaseConnection();
+            }
+            if(null != httpGet){
+                httpGet.releaseConnection();
             }
         } catch (IOException e) {
             e.printStackTrace();
         }finally {
             try {
-                if(null != httpClient){
-                    httpClient.close();
-                }
                 if(null != httpResponse){
                     httpResponse.close();
+                }
+                if(null != httpPost){
+                    httpPost.releaseConnection();
+                }
+                if(null != httpGet){
+                    httpGet.releaseConnection();
                 }
             }catch (Exception e){
                 e.printStackTrace();

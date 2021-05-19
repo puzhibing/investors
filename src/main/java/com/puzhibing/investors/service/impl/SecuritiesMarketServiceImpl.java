@@ -397,8 +397,10 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                     }
                     break;
             }
+            map.put("id", s.getId());
             map.put("latitude", d);
             map.put("value", v);
+//            map.put("")
             map.put("startTime", startTime);
             list.add(map);
         }

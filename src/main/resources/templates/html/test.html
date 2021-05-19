@@ -11,6 +11,7 @@
 <script type="text/javascript" src="/echarts-5.0.2/echarts.js"></script>
 <script type="text/javascript">
     var pageNo = 1;
+    var path = 'http://192.168.0.80:8080';
 
     $(function () {
         getAllData(pageNo);
@@ -32,7 +33,7 @@
     });
 
     function getAllData(pageNo) {
-        $.post("http://192.168.0.80:8080/test/queryAllData", {
+        $.post(path + "/test/queryAllData", {
             pageNo: pageNo,
             pageSize: 10
         }, function (res) {
@@ -50,7 +51,12 @@
     
     function build(data) {
         for(var i = 0; i < data.length; i++){
-            $('body').append('<div style="width: 100%"><div id="main' + (i + ((pageNo - 1) * 10)) + '" style="width: 60%;height:400px;"></div></div>');
+            var id = data[i].id;
+            $('body').append('' +
+                '<div style="width: 100%">' +
+                '   <div id="main' + (i + ((pageNo - 1) * 10)) + '" style="width: 60%;height:400px; float: left;"></div>' +
+                '   <div style="float: left;"><button onclick="synchronizeHistoricalData(\'' + id + '\')">同步历史数据</button></div>' +
+                '</div>');
 
             var latitude = data[i].latitude;
             var value = data[i].value;
@@ -62,13 +68,13 @@
             // 指定图表的配置项和数据
             option = {
                 title: {
-                    text: '折线图堆叠'
+                    text: name
                 },
                 tooltip: {
                     trigger: 'axis'
                 },
                 legend: {
-                    data: [name]
+                    data: ['收盘价']
                 },
                 grid: {
                     left: '3%',
@@ -102,7 +108,7 @@
                 },
                 series: [
                     {
-                        name: name,
+                        name: '收盘价',
                         data: value,
                         type: 'line',
                         markPoint: {
@@ -123,6 +129,14 @@
             // 使用刚指定的配置项和数据显示图表。
             myChart.setOption(option);
         }
+    }
+
+    function synchronizeHistoricalData(id) {
+        $.post(path + '/securitiesMarket/synchronizeHistoricalData', {
+            id: id
+        }, function (res) {
+
+        })
     }
 </script>
 
