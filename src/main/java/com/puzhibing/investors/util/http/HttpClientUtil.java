@@ -33,11 +33,11 @@ public class HttpClientUtil {
 
     private CloseableHttpResponse httpResponse;
 
-    private RequestConfig requestConfig;
-
     private HttpGet httpGet;
 
     private HttpPost httpPost;
+
+    private RequestConfig requestConfig;
 
 
     /**
@@ -186,7 +186,7 @@ public class HttpClientUtil {
      * @return
      */
     public HttpResult pushHttpRequsetXml(String url, String xml, Map<String, String> header){
-        httpPost = new HttpPost(url);
+        HttpPost httpPost = new HttpPost(url);
         for(String key : header.keySet()){
             httpPost.setHeader(key, header.get(key));
         }

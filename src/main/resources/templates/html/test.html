@@ -11,7 +11,7 @@
 <script type="text/javascript" src="/echarts-5.0.2/echarts.js"></script>
 <script type="text/javascript">
     var pageNo = 1;
-    var path = 'http://192.168.0.80:8080';
+    var path = "http://127.0.0.1:8080";
 
     $(function () {
         getAllData(pageNo);
@@ -52,14 +52,14 @@
     function build(data) {
         for(var i = 0; i < data.length; i++){
             var id = data[i].id;
-            $('body').append('' +
-                '<div style="width: 100%">' +
-                '   <div id="main' + (i + ((pageNo - 1) * 10)) + '" style="width: 60%;height:400px; float: left;"></div>' +
-                '   <div style="float: left;"><button onclick="synchronizeHistoricalData(\'' + id + '\')">同步历史数据</button></div>' +
+            $('body').append('<div style="width: 100%">' +
+                '<div id="main' + (i + ((pageNo - 1) * 10)) + '" style="width: 60%;height:400px; float: left;"></div>' +
+                '<div style="float: left;width: 40%;"><button onclick="synchronizeHistoricalData(\'' + id + '\')">同步历史数据</button></div>' +
                 '</div>');
 
             var latitude = data[i].latitude;
-            var value = data[i].value;
+            var closingPrice = data[i].closingPrice;
+            var turnoverRate = data[i].turnoverRate;
             var name = data[i].name;
             var startTime = data[i].startTime;
             // 基于准备好的dom，初始化echarts实例
@@ -74,7 +74,7 @@
                     trigger: 'axis'
                 },
                 legend: {
-                    data: ['收盘价']
+                    data: ['收盘价', '换手率']
                 },
                 grid: {
                     left: '3%',
@@ -109,7 +109,23 @@
                 series: [
                     {
                         name: '收盘价',
-                        data: value,
+                        data: closingPrice,
+                        type: 'line',
+                        markPoint: {
+                            data: [
+                                {type: 'max', name: '最大值'},
+                                {type: 'min', name: '最小值'}
+                            ]
+                        },
+                        markLine: {
+                            data: [
+                                {type: 'average', name: '平均值'}
+                            ]
+                        }
+                    },
+                    {
+                        name: '换手率',
+                        data: turnoverRate,
                         type: 'line',
                         markPoint: {
                             data: [
@@ -131,11 +147,14 @@
         }
     }
 
+
     function synchronizeHistoricalData(id) {
-        $.post(path + '/securitiesMarket/synchronizeHistoricalData', {
+        $.post(path + "/securitiesMarket/synchronizeHistoricalData", {
             id: id
         }, function (res) {
+            if(res.code == 200){
 
+            }
         })
     }
 </script>
