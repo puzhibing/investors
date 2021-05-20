@@ -36,4 +36,17 @@ public class TestController {
             return ResultUtil.runErr();
         }
     }
+
+
+    @ResponseBody
+    @PostMapping("/profitAndLossOfQuantitative")
+    public ResultUtil profitAndLossOfQuantitative(String code, Integer securitiesCategoryId, String date, Integer pageNo, Integer pageSize){
+        try {
+            List<Map<String, Object>> list = securitiesMarketService.profitAndLossOfQuantitative(code, securitiesCategoryId, date, pageNo, pageSize);
+            return ResultUtil.success(list);
+        }catch (Exception e){
+            e.printStackTrace();
+            return ResultUtil.runErr();
+        }
+    }
 }

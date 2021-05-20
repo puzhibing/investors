@@ -47,8 +47,8 @@ public class HttpClientUtil {
         //1.创建连接池管理器
         PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager(60000,
                 TimeUnit.MILLISECONDS);
-        connectionManager.setMaxTotal(1000);
-        connectionManager.setDefaultMaxPerRoute(50);
+        connectionManager.setMaxTotal(10000);
+        connectionManager.setDefaultMaxPerRoute(100);
 
         //2.创建httpclient对象
         this.httpClient = HttpClients.custom()

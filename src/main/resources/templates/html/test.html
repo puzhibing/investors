@@ -3,19 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="/layui/css/layui.css"  media="all">
 </head>
 <body>
+    <div class="layui-form" action="" lay-filter="formFilter">
+        <div class="screen">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">分类</label>
+                    <div class="layui-input-inline">
+                        <select name="securitiesCategoryFilter">
+                            <option value="">全部</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">编号</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="code" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">日期选择</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="tradeDate" id="tradeDate" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <div class="layui-input-block">
+                        <button type="submit" class="layui-btn" lay-submit="" lay-filter="demo1" onclick="getAllData(2)">立即提交</button>
+                        <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="chart">
 
+        </div>
+    </div>
 </body>
 <script type="text/javascript" src="/js/jquery-v3.6.0.js"></script>
 <script type="text/javascript" src="/echarts-5.0.2/echarts.js"></script>
+<script src="/layui/layui.js" charset="utf-8"></script>
 <script type="text/javascript">
     var pageNo = 1;
+    var pageSize = 10;
     var path = "http://127.0.0.1:8080";
 
-    $(function () {
-        getAllData(pageNo);
-    })
+    var form,layer,laydate;
+    layui.use(['form', 'laydate'], function() {
+        form = layui.form;
+        layer = layui.layer;
+        laydate = layui.laydate;
+
+        //日期
+        laydate.render({
+            elem: '#tradeDate'
+            ,range: true
+        });
+
+        // getAllData(1);
+    });
+
 
 
     $(document).scroll(function() {
@@ -27,20 +79,60 @@
         if (contentH - (scroH + viewH) <= 100){  //距离底部高度小于100px
         }
         if (contentH == (scroH + viewH)){  //滚动条滑到底部啦
-            pageNo++;
-            getAllData(pageNo);
+            // pageNo++;
+            // getAllData(1);
         }
     });
 
-    function getAllData(pageNo) {
+    function getAllData(type) {
+        if(type == 2){//清除历史页面数据
+            $('.chart').html('');
+        }
+        var obj = form.val('formFilter');
         $.post(path + "/test/queryAllData", {
+            code: obj.code,
+            securitiesCategoryId: obj.securitiesCategoryFilter,
+            date: obj.tradeDate,
             pageNo: pageNo,
-            pageSize: 10
+            pageSize: pageSize
+        }, function (res) {
+            if(res.code == 200){
+                var data = res.data;
+                for(var i = 0; i < data.length; i++) {
+                    var id = data[i].id;
+                    $('.chart').append('' +
+                        '<div style="width: 100%" id="' + id + '">' +
+                        '   <div style="width: 60%; float: left;">' +
+                        '       <div id="closingPrice' + id + '" style="width: 100%;height:1000px;"></div>' +
+                        '       <div id="riseFallPrice' + id + '" style="width: 100%;height:1000px;"></div>' +
+                        '   </div>' +
+                        '</div>');
+                }
+                if(data.length > 0){
+                    buildClosingPrice(data);
+                }
+                profitAndLossOfQuantitative();
+            }else{
+                alert(res.msg);
+            }
+        });
+    }
+
+
+
+    function profitAndLossOfQuantitative() {
+        var obj = form.val('formFilter');
+        $.post(path + "/test/profitAndLossOfQuantitative", {
+            code: obj.code,
+            securitiesCategoryId: obj.securitiesCategoryFilter,
+            date: obj.tradeDate,
+            pageNo: pageNo,
+            pageSize: pageSize
         }, function (res) {
             if(res.code == 200){
                 var data = res.data;
                 if(data.length > 0){
-                    build(data);
+                    buildRiseFallPrice(data);
                 }
             }else{
                 alert(res.msg);
@@ -49,21 +141,20 @@
     }
     
     
-    function build(data) {
+    function buildClosingPrice(data) {
         for(var i = 0; i < data.length; i++){
             var id = data[i].id;
-            $('body').append('<div style="width: 100%">' +
-                '<div id="main' + (i + ((pageNo - 1) * 10)) + '" style="width: 60%;height:400px; float: left;"></div>' +
-                '<div style="float: left;width: 40%;"><button onclick="synchronizeHistoricalData(\'' + id + '\')">同步历史数据</button></div>' +
-                '</div>');
-
             var latitude = data[i].latitude;
             var closingPrice = data[i].closingPrice;
             var turnoverRate = data[i].turnoverRate;
+            var weekAvgClosingPrice = data[i].weekAvgClosingPrice;
+            var monthAvgClosingPrice = data[i].monthAvgClosingPrice;
+            var yearAvgClosingPrice = data[i].yearAvgClosingPrice;
+            var civilYearAvgClosingPrice = data[i].civilYearAvgClosingPrice;
             var name = data[i].name;
             var startTime = data[i].startTime;
             // 基于准备好的dom，初始化echarts实例
-            var myChart = echarts.init(document.getElementById('main' + (i + ((pageNo - 1) * 10))));
+            var myChart1 = echarts.init(document.getElementById('closingPrice' + id));
 
             // 指定图表的配置项和数据
             option = {
@@ -71,10 +162,23 @@
                     text: name
                 },
                 tooltip: {
-                    trigger: 'axis'
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'cross',
+                        animation: false,
+                        label: {
+                            backgroundColor: '#ccc',
+                            borderColor: '#aaa',
+                            borderWidth: 1,
+                            shadowBlur: 0,
+                            shadowOffsetX: 0,
+                            shadowOffsetY: 0,
+                            color: '#222'
+                        }
+                    }
                 },
                 legend: {
-                    data: ['收盘价', '换手率']
+                    data: ['收盘价', '换手率', '周移动平均', '月移动平均', '年移动平均', '自然年平均']
                 },
                 grid: {
                     left: '3%',
@@ -111,6 +215,7 @@
                         name: '收盘价',
                         data: closingPrice,
                         type: 'line',
+                        showSymbol: false,
                         markPoint: {
                             data: [
                                 {type: 'max', name: '最大值'},
@@ -126,7 +231,8 @@
                     {
                         name: '换手率',
                         data: turnoverRate,
-                        type: 'line',
+                        type: 'bar',
+                        showSymbol: false,
                         markPoint: {
                             data: [
                                 {type: 'max', name: '最大值'},
@@ -138,10 +244,115 @@
                                 {type: 'average', name: '平均值'}
                             ]
                         }
+                    },
+                    {
+                        name: '周移动平均',
+                        data: weekAvgClosingPrice,
+                        type: 'line',
+                        showSymbol: false,
+                    },
+                    {
+                        name: '月移动平均',
+                        data: monthAvgClosingPrice,
+                        type: 'line',
+                        showSymbol: false,
+                    },
+                    {
+                        name: '年移动平均',
+                        data: yearAvgClosingPrice,
+                        type: 'line',
+                        showSymbol: false,
+                    },
+                    {
+                        name: '自然年平均',
+                        data: civilYearAvgClosingPrice,
+                        type: 'line',
+                        showSymbol: false,
                     }
                 ]
             };
+            // 使用刚指定的配置项和数据显示图表。
+            myChart1.setOption(option);
+        }
+    }
 
+
+
+    function buildRiseFallPrice(data) {
+        for(var i = 0; i < data.length; i++){
+            var id = data[i].id;
+            var latitude = data[i].latitude;
+            var riseFallPrice = data[i].riseFallPrice;
+            var name = data[i].name;
+            var startTime = data[i].startTime;
+            // 基于准备好的dom，初始化echarts实例
+            var myChart = echarts.init(document.getElementById('riseFallPrice' + id));
+
+            // 指定图表的配置项和数据
+            option = {
+                tooltip: {
+                    trigger: 'axis',
+                    position: function (pt) {
+                        return [pt[0], '10%'];
+                    }
+                },
+                title: {
+                    left: 'center',
+                    text: '大数据量面积图',
+                },
+                toolbox: {
+                    feature: {
+                        dataZoom: {
+                            yAxisIndex: 'none'
+                        },
+                        restore: {},
+                        saveAsImage: {}
+                    }
+                },
+                dataZoom: [{
+                    startValue: startTime
+                }, {
+                    type: 'inside'
+                }],
+                xAxis: {
+                    type: 'category',
+                    boundaryGap: false,
+                    data: latitude
+                },
+                yAxis: {
+                    type: 'value',
+                    boundaryGap: [0, '100%']
+                },
+                dataZoom: [{
+                    type: 'inside',
+                    start: 0,
+                    end: 10
+                }, {
+                    start: 0,
+                    end: 10
+                }],
+                series: [
+                    {
+                        name: '模拟数据',
+                        type: 'line',
+                        symbol: 'none',
+                        sampling: 'lttb',
+                        itemStyle: {
+                            color: 'rgb(255, 70, 131)'
+                        },
+                        areaStyle: {
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
+                                offset: 0,
+                                color: 'rgb(255, 158, 68)'
+                            }, {
+                                offset: 1,
+                                color: 'rgb(255, 70, 131)'
+                            }])
+                        },
+                        data: riseFallPrice
+                    }
+                ]
+            };
             // 使用刚指定的配置项和数据显示图表。
             myChart.setOption(option);
         }

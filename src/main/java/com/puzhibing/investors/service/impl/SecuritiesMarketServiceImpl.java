@@ -343,14 +343,20 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
         List<Map<String, Object>> list = new ArrayList<>();
         SimpleDateFormat sdf = new SimpleDateFormat("yyy-MM-dd");
         SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy");
-        int y = Integer.valueOf(sdf1.format(new Date())) - 4;
+        int y = Integer.valueOf(sdf1.format(new Date())) - 0;
         for(Securities s : securities){
             Map<String, Object> map = new HashMap<>();
             map.put("name", s.getName() + "(" + s.getCode() + ")");
             SecuritiesCategory securitiesCategory = securitiesCategoryService.selectById(s.getSecuritiesCategoryId());
-            List<String> d = new ArrayList<>();
-            List<Double> day = new ArrayList<>();
-            List<Double> h = new ArrayList<>();
+            List<String> d = new ArrayList<>();//日期
+            List<Double> day = new ArrayList<>();//1天收盘价
+            List<Double> h = new ArrayList<>();//换手率
+            List<Double> weeks = new ArrayList<>();//5天移动平均值
+            List<Double> months = new ArrayList<>();//30天移动平均值
+            List<Double> years = new ArrayList<>();//365天移动平均值
+            List<Double> civilYear = new ArrayList<>();//自然年的平均值
+            int year = 0;//年份
+            Double yearAvg = 0D;
             String startTime = "";
             switch (securitiesCategory.getCode()){
                 case "sh_a":
@@ -363,6 +369,22 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         if(!StringUtils.hasLength(startTime) && y == y1){
                             startTime = sdf.format(sha.getTradeDate());
                         }
+                        Double week = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), sha.getTradeDate(), 5);
+                        weeks.add(week);
+
+                        Double month = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), sha.getTradeDate(), 30);
+                        months.add(month);
+
+                        Double yy = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), sha.getTradeDate(), 365);
+                        years.add(yy);
+
+                        int ye = Integer.valueOf(sdf1.format(sha.getTradeDate())).intValue();
+                        if(year != ye){
+                            yearAvg = getYearAvgClosingPrice(securitiesCategory.getCode(), s.getId(), sha.getTradeDate());
+                            year = ye;
+                        }
+                        civilYear.add(yearAvg);
+
                     }
                     break;
                 case "sh_b":
@@ -375,6 +397,21 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         if(!StringUtils.hasLength(startTime) && y == y1){
                             startTime = sdf.format(shb.getTradeDate());
                         }
+                        Double week = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), shb.getTradeDate(), 5);
+                        weeks.add(week);
+
+                        Double month = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), shb.getTradeDate(), 30);
+                        months.add(month);
+
+                        Double yy = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), shb.getTradeDate(), 365);
+                        years.add(yy);
+
+                        int ye = Integer.valueOf(sdf1.format(shb.getTradeDate())).intValue();
+                        if(year != ye){
+                            yearAvg = getYearAvgClosingPrice(securitiesCategory.getCode(), s.getId(), shb.getTradeDate());
+                            year = ye;
+                        }
+                        civilYear.add(yearAvg);
                     }
                     break;
                 case "sz_a":
@@ -387,6 +424,21 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         if(!StringUtils.hasLength(startTime) && y == y1){
                             startTime = sdf.format(sza.getTradeDate());
                         }
+                        Double week = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), sza.getTradeDate(), 5);
+                        weeks.add(week);
+
+                        Double month = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), sza.getTradeDate(), 30);
+                        months.add(month);
+
+                        Double yy = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), sza.getTradeDate(), 365);
+                        years.add(yy);
+
+                        int ye = Integer.valueOf(sdf1.format(sza.getTradeDate())).intValue();
+                        if(year != ye){
+                            yearAvg = getYearAvgClosingPrice(securitiesCategory.getCode(), s.getId(), sza.getTradeDate());
+                            year = ye;
+                        }
+                        civilYear.add(yearAvg);
                     }
                     break;
                 case "sz_b":
@@ -399,6 +451,21 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         if(!StringUtils.hasLength(startTime) && y == y1){
                             startTime = sdf.format(szb.getTradeDate());
                         }
+                        Double week = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), szb.getTradeDate(), 5);
+                        weeks.add(week);
+
+                        Double month = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), szb.getTradeDate(), 30);
+                        months.add(month);
+
+                        Double yy = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), szb.getTradeDate(), 365);
+                        years.add(yy);
+
+                        int ye = Integer.valueOf(sdf1.format(szb.getTradeDate())).intValue();
+                        if(year != ye){
+                            yearAvg = getYearAvgClosingPrice(securitiesCategory.getCode(), s.getId(), szb.getTradeDate());
+                            year = ye;
+                        }
+                        civilYear.add(yearAvg);
                     }
                     break;
             }
@@ -406,11 +473,124 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             map.put("latitude", d);
             map.put("closingPrice", day);
             map.put("turnoverRate", h);
+            map.put("weekAvgClosingPrice", weeks);
+            map.put("monthAvgClosingPrice", months);
+            map.put("yearAvgClosingPrice", years);
+            map.put("civilYearAvgClosingPrice", civilYear);
             map.put("startTime", startTime);
             list.add(map);
+            break;// TODO: 2021/5/19 先查询一条数据
         }
         return list;
     }
+
+
+    /**
+     * 获取时间区间的平均收盘价
+     * @param type
+     * @param securitiesId
+     * @param date
+     * @param days
+     * @return
+     * @throws Exception
+     */
+    public Double getAvgClosingPrice(String type, Integer securitiesId, Date date, Integer days) throws Exception{
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd");
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) - days);
+        Date start = sdf.parse((sdf1.format(calendar.getTime()) + " 00:00:00"));
+        Date end = sdf.parse((sdf1.format(date) + " 23:59:59"));
+        Double avg = 0D;
+        BigDecimal sum = new BigDecimal(0);
+        switch (type){
+            case "sh_a":
+                List<SHASecuritiesMarket> shaSecuritiesMarkets = shaSecuritiesMarketMapper.queryList(securitiesId, start, end);
+                for (SHASecuritiesMarket shaSecuritiesMarket : shaSecuritiesMarkets) {
+                    sum = sum.add(new BigDecimal(shaSecuritiesMarket.getClosingPrice()));
+                }
+                avg = sum.divide(new BigDecimal(shaSecuritiesMarkets.size()), 2, RoundingMode.HALF_EVEN).doubleValue();
+                break;
+            case "sh_b":
+                List<SHBSecuritiesMarket> shbSecuritiesMarkets = shbSecuritiesMarketMapper.queryList(securitiesId, start, end);
+                for (SHBSecuritiesMarket shbSecuritiesMarket : shbSecuritiesMarkets) {
+                    sum = sum.add(new BigDecimal(shbSecuritiesMarket.getClosingPrice()));
+                }
+                avg = sum.divide(new BigDecimal(shbSecuritiesMarkets.size()), 2, RoundingMode.HALF_EVEN).doubleValue();
+                break;
+            case "sz_a":
+                List<SZASecuritiesMarket> szaSecuritiesMarkets = szaSecuritiesMarketMapper.queryList(securitiesId, start, end);
+                for (SZASecuritiesMarket szaSecuritiesMarket : szaSecuritiesMarkets) {
+                    sum = sum.add(new BigDecimal(szaSecuritiesMarket.getClosingPrice()));
+                }
+                avg = sum.divide(new BigDecimal(szaSecuritiesMarkets.size()), 2, RoundingMode.HALF_EVEN).doubleValue();
+                break;
+            case "sz_b":
+                List<SZBSecuritiesMarket> szbSecuritiesMarkets = szbSecuritiesMarketMapper.queryList(securitiesId, start, end);
+                for (SZBSecuritiesMarket szbSecuritiesMarket : szbSecuritiesMarkets) {
+                    sum = sum.add(new BigDecimal(szbSecuritiesMarket.getClosingPrice()));
+                }
+                avg = sum.divide(new BigDecimal(szbSecuritiesMarkets.size()), 2, RoundingMode.HALF_EVEN).doubleValue();
+                break;
+        }
+        return avg;
+    }
+
+
+    /**
+     * 获取自然年的收盘均价
+     * @param type
+     * @param securitiesId
+     * @param date
+     * @return
+     * @throws Exception
+     */
+    public Double getYearAvgClosingPrice(String type, Integer securitiesId, Date date) throws Exception{
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy");
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        Date start = sdf.parse((sdf1.format(calendar.getTime()) + "-01-01 00:00:00"));
+        Date end = sdf.parse((sdf1.format(calendar.getTime()) + "-12-31 23:59:59"));
+        Double avg = 0D;
+        BigDecimal sum = new BigDecimal(0);
+        switch (type){
+            case "sh_a":
+                List<SHASecuritiesMarket> shaSecuritiesMarkets = shaSecuritiesMarketMapper.queryList(securitiesId, start, end);
+                for (SHASecuritiesMarket shaSecuritiesMarket : shaSecuritiesMarkets) {
+                    sum = sum.add(new BigDecimal(shaSecuritiesMarket.getClosingPrice()));
+                }
+                avg = sum.divide(new BigDecimal(shaSecuritiesMarkets.size()), 2, RoundingMode.HALF_EVEN).doubleValue();
+                break;
+            case "sh_b":
+                List<SHBSecuritiesMarket> shbSecuritiesMarkets = shbSecuritiesMarketMapper.queryList(securitiesId, start, end);
+                for (SHBSecuritiesMarket shbSecuritiesMarket : shbSecuritiesMarkets) {
+                    sum = sum.add(new BigDecimal(shbSecuritiesMarket.getClosingPrice()));
+                }
+                avg = sum.divide(new BigDecimal(shbSecuritiesMarkets.size()), 2, RoundingMode.HALF_EVEN).doubleValue();
+                break;
+            case "sz_a":
+                List<SZASecuritiesMarket> szaSecuritiesMarkets = szaSecuritiesMarketMapper.queryList(securitiesId, start, end);
+                for (SZASecuritiesMarket szaSecuritiesMarket : szaSecuritiesMarkets) {
+                    sum = sum.add(new BigDecimal(szaSecuritiesMarket.getClosingPrice()));
+                }
+                avg = sum.divide(new BigDecimal(szaSecuritiesMarkets.size()), 2, RoundingMode.HALF_EVEN).doubleValue();
+                break;
+            case "sz_b":
+                List<SZBSecuritiesMarket> szbSecuritiesMarkets = szbSecuritiesMarketMapper.queryList(securitiesId, start, end);
+                for (SZBSecuritiesMarket szbSecuritiesMarket : szbSecuritiesMarkets) {
+                    sum = sum.add(new BigDecimal(szbSecuritiesMarket.getClosingPrice()));
+                }
+                avg = sum.divide(new BigDecimal(szbSecuritiesMarkets.size()), 2, RoundingMode.HALF_EVEN).doubleValue();
+                break;
+        }
+        return avg;
+    }
+
+
+
+
 
     /**
      * 同步历史交易数据
@@ -418,131 +598,401 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
      * @throws Exception
      */
     @Override
-    public ResultUtil synchronizeHistoricalData(Integer id) {
+    public ResultUtil synchronizeHistoricalData() {
         new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
-                    Securities s = securitiesMapper.selectById(id);
-                    SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd");
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy");
-                    Date date = new Date();
-                    Integer year = Integer.valueOf(sdf.format(date));//年份
-                    Calendar calendar = Calendar.getInstance();
-                    calendar.setTime(date);
-                    while (true){
-                        int quarter = 0;
-                        if(year.intValue() == Integer.valueOf(sdf.format(date)).intValue()){
-                            quarter = DateUtil.createDate(date).QUARTER;//季节
-                        }else{
-                            quarter = 4;
-                        }
-                        boolean b = false;
+                    List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
+                    for(Securities s : securities){
+                        SecuritiesCategory securitiesCategory = securitiesCategoryService.selectById(s.getSecuritiesCategoryId());
+                        SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd");
+                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy");
+                        Date date = new Date();
+                        Integer year = Integer.valueOf(sdf.format(date));//年份
+                        Calendar calendar = Calendar.getInstance();
+                        calendar.setTime(date);
                         while (true){
-                            String url = "http://quotes.money.163.com/trade/lsjysj_" + s.getCode() + ".html?year=" + year + "&season=" + quarter;
-                            HttpResult httpResult = httpClientUtil.pushHttpRequset("GET", url, null, null, "json");
-                            if(null == httpResult){
-                                System.err.println("数据请求异常");
+                            int quarter = 0;
+                            if(year.intValue() == Integer.valueOf(sdf.format(date)).intValue()){
+                                quarter = DateUtil.createDate(date).QUARTER;//季节
+                            }else{
+                                quarter = 4;
                             }
-                            if(httpResult.getCode() != 200){
-                                System.err.println(httpResult.getData());
+                            boolean b = false;
+                            while (true){
+                                String url = "http://quotes.money.163.com/trade/lsjysj_" + s.getCode() + ".html?year=" + year + "&season=" + quarter;
+                                HttpResult httpResult = httpClientUtil.pushHttpRequset("GET", url, null, null, "json");
+                                if(null == httpResult){
+                                    System.err.println("数据请求异常");
+                                }
+                                if(httpResult.getCode() != 200){
+                                    System.err.println(httpResult.getData());
+                                }
+                                Document document = Jsoup.parse(httpResult.getData());
+                                Element element = document.getElementsByClass("table_bg001").get(0);
+                                Elements tr = element.getElementsByTag("tr");
+                                if(tr.size() == 1){//没有数据
+                                    b = true;
+                                    break;
+                                }
+                                //解析数据
+                                for(int i = 0; i < tr.size(); i++){
+                                    Elements td = tr.get(i).getElementsByTag("td");
+                                    if(td.size() == 0){
+                                        continue;
+                                    }
+                                    String rq = td.get(0).text().equals("--") ? "0" : td.get(0).text();//日期
+                                    String kpj = td.get(1).text().equals("--") ? "0" : td.get(1).text();//开盘价
+                                    String zgj = td.get(2).text().equals("--") ? "0" : td.get(2).text();//最高价
+                                    String zdj = td.get(3).text().equals("--") ? "0" : td.get(3).text();//最低价
+                                    String spj = td.get(4).text().equals("--") ? "0" : td.get(4).text();//收盘价
+                                    String zde = td.get(5).text().equals("--") ? "0" : td.get(5).text();//涨跌额
+                                    String zdf = td.get(6).text().equals("--") ? "0" : td.get(6).text();//涨跌幅(%)
+                                    String cjl = td.get(7).text().equals("--") ? "0" : td.get(7).text().replaceAll(",", "");//成交量(手)
+                                    String cjje = td.get(8).text().equals("--") ? "0" : td.get(8).text().replaceAll(",", "");//成交金额(万元)
+                                    String zf = td.get(9).text().equals("--") ? "0" : td.get(9).text();//振幅(%)
+                                    String hsl = td.get(10).text().equals("--") ? "0" : td.get(10).text();//换手率(%)
+                                    String sqspj = new BigDecimal(spj).subtract(new BigDecimal(zde)).setScale(2, RoundingMode.HALF_EVEN).toString();//上期收盘价
+
+                                    if(securitiesCategory.getCode().equals("sh_a")){
+                                        SHASecuritiesMarket shaSecuritiesMarket = shaSecuritiesMarketMapper.queryBySecuritiesIdAndDate(s.getId(), sdf1.parse(rq));
+                                        if(null != shaSecuritiesMarket){
+                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getLastClosingPrice())){
+                                                shaSecuritiesMarket.setLastClosingPrice(sqspj);
+                                            }
+                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getClosingPrice())){
+                                                shaSecuritiesMarket.setClosingPrice(spj);
+                                            }
+                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getRiseFallPrice())){
+                                                shaSecuritiesMarket.setRiseFallPrice(zde);
+                                            }
+                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getRiseFallRatio())){
+                                                shaSecuritiesMarket.setRiseFallRatio(zdf);
+                                            }
+                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getOpeningPrice())){
+                                                shaSecuritiesMarket.setOpeningPrice(kpj);
+                                            }
+                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getTopPrice())){
+                                                shaSecuritiesMarket.setTopPrice(zgj);
+                                            }
+                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getLowestPrice())){
+                                                shaSecuritiesMarket.setLowestPrice(zdj);
+                                            }
+                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getAmplitude())){
+                                                shaSecuritiesMarket.setAmplitude(zf);
+                                            }
+                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getVolume())){
+                                                shaSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
+                                            }
+                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getDealAmount())){
+                                                shaSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
+                                            }
+                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getTurnoverRate())){
+                                                shaSecuritiesMarket.setTurnoverRate(hsl);
+                                            }
+                                            shaSecuritiesMarketMapper.update(shaSecuritiesMarket);
+                                        }else{
+                                            shaSecuritiesMarket = new SHASecuritiesMarket();
+                                            shaSecuritiesMarket.setSecuritiesId(s.getId());
+                                            shaSecuritiesMarket.setTradeDate(sdf1.parse(rq));
+                                            shaSecuritiesMarket.setLastClosingPrice(sqspj);
+                                            shaSecuritiesMarket.setClosingPrice(spj);
+                                            shaSecuritiesMarket.setRiseFallPrice(zde);
+                                            shaSecuritiesMarket.setRiseFallRatio(zdf);
+                                            shaSecuritiesMarket.setOpeningPrice(kpj);
+                                            shaSecuritiesMarket.setTopPrice(zgj);
+                                            shaSecuritiesMarket.setLowestPrice(zdj);
+                                            shaSecuritiesMarket.setAmplitude(zf);
+                                            shaSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
+                                            shaSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
+                                            shaSecuritiesMarket.setTurnoverRate(hsl);
+                                            shaSecuritiesMarketMapper.insert(shaSecuritiesMarket);
+                                        }
+                                    }
+                                    if(securitiesCategory.getCode().equals("sh_b")){
+                                        SHBSecuritiesMarket shbSecuritiesMarket = shbSecuritiesMarketMapper.queryBySecuritiesIdAndDate(s.getId(), sdf1.parse(rq));
+                                        if(null != shbSecuritiesMarket){
+                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getLastClosingPrice())){
+                                                shbSecuritiesMarket.setLastClosingPrice(sqspj);
+                                            }
+                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getClosingPrice())){
+                                                shbSecuritiesMarket.setClosingPrice(spj);
+                                            }
+                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getRiseFallPrice())){
+                                                shbSecuritiesMarket.setRiseFallPrice(zde);
+                                            }
+                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getRiseFallRatio())){
+                                                shbSecuritiesMarket.setRiseFallRatio(zdf);
+                                            }
+                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getOpeningPrice())){
+                                                shbSecuritiesMarket.setOpeningPrice(kpj);
+                                            }
+                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getTopPrice())){
+                                                shbSecuritiesMarket.setTopPrice(zgj);
+                                            }
+                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getLowestPrice())){
+                                                shbSecuritiesMarket.setLowestPrice(zdj);
+                                            }
+                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getAmplitude())){
+                                                shbSecuritiesMarket.setAmplitude(zf);
+                                            }
+                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getVolume())){
+                                                shbSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
+                                            }
+                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getDealAmount())){
+                                                shbSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
+                                            }
+                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getTurnoverRate())){
+                                                shbSecuritiesMarket.setTurnoverRate(hsl);
+                                            }
+                                            shbSecuritiesMarketMapper.update(shbSecuritiesMarket);
+                                        }else{
+                                            shbSecuritiesMarket = new SHBSecuritiesMarket();
+                                            shbSecuritiesMarket.setSecuritiesId(s.getId());
+                                            shbSecuritiesMarket.setTradeDate(sdf1.parse(rq));
+                                            shbSecuritiesMarket.setLastClosingPrice(sqspj);
+                                            shbSecuritiesMarket.setClosingPrice(spj);
+                                            shbSecuritiesMarket.setRiseFallPrice(zde);
+                                            shbSecuritiesMarket.setRiseFallRatio(zdf);
+                                            shbSecuritiesMarket.setOpeningPrice(kpj);
+                                            shbSecuritiesMarket.setTopPrice(zgj);
+                                            shbSecuritiesMarket.setLowestPrice(zdj);
+                                            shbSecuritiesMarket.setAmplitude(zf);
+                                            shbSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
+                                            shbSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
+                                            shbSecuritiesMarket.setTurnoverRate(hsl);
+                                            shbSecuritiesMarketMapper.insert(shbSecuritiesMarket);
+                                        }
+                                    }
+                                    if(securitiesCategory.getCode().equals("sz_a")){
+                                        SZASecuritiesMarket szaSecuritiesMarket = szaSecuritiesMarketMapper.queryBySecuritiesIdAndDate(s.getId(), sdf1.parse(rq));
+                                        if(null != szaSecuritiesMarket){
+                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getLastClosingPrice())){
+                                                szaSecuritiesMarket.setLastClosingPrice(sqspj);
+                                            }
+                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getClosingPrice())){
+                                                szaSecuritiesMarket.setClosingPrice(spj);
+                                            }
+                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getRiseFallPrice())){
+                                                szaSecuritiesMarket.setRiseFallPrice(zde);
+                                            }
+                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getRiseFallRatio())){
+                                                szaSecuritiesMarket.setRiseFallRatio(zdf);
+                                            }
+                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getOpeningPrice())){
+                                                szaSecuritiesMarket.setOpeningPrice(kpj);
+                                            }
+                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getTopPrice())){
+                                                szaSecuritiesMarket.setTopPrice(zgj);
+                                            }
+                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getLowestPrice())){
+                                                szaSecuritiesMarket.setLowestPrice(zdj);
+                                            }
+                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getAmplitude())){
+                                                szaSecuritiesMarket.setAmplitude(zf);
+                                            }
+                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getVolume())){
+                                                szaSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
+                                            }
+                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getDealAmount())){
+                                                szaSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
+                                            }
+                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getTurnoverRate())){
+                                                szaSecuritiesMarket.setTurnoverRate(hsl);
+                                            }
+                                            szaSecuritiesMarketMapper.update(szaSecuritiesMarket);
+                                        }else{
+                                            szaSecuritiesMarket = new SZASecuritiesMarket();
+                                            szaSecuritiesMarket.setSecuritiesId(s.getId());
+                                            szaSecuritiesMarket.setTradeDate(sdf1.parse(rq));
+                                            szaSecuritiesMarket.setLastClosingPrice(sqspj);
+                                            szaSecuritiesMarket.setClosingPrice(spj);
+                                            szaSecuritiesMarket.setRiseFallPrice(zde);
+                                            szaSecuritiesMarket.setRiseFallRatio(zdf);
+                                            szaSecuritiesMarket.setOpeningPrice(kpj);
+                                            szaSecuritiesMarket.setTopPrice(zgj);
+                                            szaSecuritiesMarket.setLowestPrice(zdj);
+                                            szaSecuritiesMarket.setAmplitude(zf);
+                                            szaSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
+                                            szaSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
+                                            szaSecuritiesMarket.setTurnoverRate(hsl);
+                                            szaSecuritiesMarketMapper.insert(szaSecuritiesMarket);
+                                        }
+                                    }
+                                    if(securitiesCategory.getCode().equals("sz_b")){
+                                        SZBSecuritiesMarket szbSecuritiesMarket = szbSecuritiesMarketMapper.queryBySecuritiesIdAndDate(s.getId(), sdf1.parse(rq));
+                                        if(null != szbSecuritiesMarket){
+                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getLastClosingPrice())){
+                                                szbSecuritiesMarket.setLastClosingPrice(sqspj);
+                                            }
+                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getClosingPrice())){
+                                                szbSecuritiesMarket.setClosingPrice(spj);
+                                            }
+                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getRiseFallPrice())){
+                                                szbSecuritiesMarket.setRiseFallPrice(zde);
+                                            }
+                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getRiseFallRatio())){
+                                                szbSecuritiesMarket.setRiseFallRatio(zdf);
+                                            }
+                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getOpeningPrice())){
+                                                szbSecuritiesMarket.setOpeningPrice(kpj);
+                                            }
+                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getTopPrice())){
+                                                szbSecuritiesMarket.setTopPrice(zgj);
+                                            }
+                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getLowestPrice())){
+                                                szbSecuritiesMarket.setLowestPrice(zdj);
+                                            }
+                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getAmplitude())){
+                                                szbSecuritiesMarket.setAmplitude(zf);
+                                            }
+                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getVolume())){
+                                                szbSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
+                                            }
+                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getDealAmount())){
+                                                szbSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
+                                            }
+                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getTurnoverRate())){
+                                                szbSecuritiesMarket.setTurnoverRate(hsl);
+                                            }
+                                            szbSecuritiesMarketMapper.update(szbSecuritiesMarket);
+                                        }else{
+                                            szbSecuritiesMarket = new SZBSecuritiesMarket();
+                                            szbSecuritiesMarket.setSecuritiesId(s.getId());
+                                            szbSecuritiesMarket.setTradeDate(sdf1.parse(rq));
+                                            szbSecuritiesMarket.setLastClosingPrice(sqspj);
+                                            szbSecuritiesMarket.setClosingPrice(spj);
+                                            szbSecuritiesMarket.setRiseFallPrice(zde);
+                                            szbSecuritiesMarket.setRiseFallRatio(zdf);
+                                            szbSecuritiesMarket.setOpeningPrice(kpj);
+                                            szbSecuritiesMarket.setTopPrice(zgj);
+                                            szbSecuritiesMarket.setLowestPrice(zdj);
+                                            szbSecuritiesMarket.setAmplitude(zf);
+                                            szbSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
+                                            szbSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
+                                            szbSecuritiesMarket.setTurnoverRate(hsl);
+                                            szbSecuritiesMarketMapper.insert(szbSecuritiesMarket);
+                                        }
+                                    }
+                                }
+                                quarter--;
+                                if(quarter == 0){
+                                    break;
+                                }
                             }
-                            Document document = Jsoup.parse(httpResult.getData());
-                            Element element = document.getElementsByClass("table_bg001").get(0);
-                            Elements tr = element.getElementsByTag("tr");
-                            if(tr.size() == 1){//没有数据
-                                b = true;
+                            if(b){//没有数据可采集。
                                 break;
                             }
-                            //解析数据
-                            for(int i = 0; i < tr.size(); i++){
-                                Elements td = tr.get(i).getElementsByTag("td");
-                                if(td.size() == 0){
-                                    continue;
-                                }
-                                String rq = td.get(0).text().equals("--") ? "0" : td.get(0).text();//日期
-                                String kpj = td.get(1).text().equals("--") ? "0" : td.get(1).text();//开盘价
-                                String zgj = td.get(2).text().equals("--") ? "0" : td.get(2).text();//最高价
-                                String zdj = td.get(3).text().equals("--") ? "0" : td.get(3).text();//最低价
-                                String spj = td.get(4).text().equals("--") ? "0" : td.get(4).text();//收盘价
-                                String zde = td.get(5).text().equals("--") ? "0" : td.get(5).text();//涨跌额
-                                String zdf = td.get(6).text().equals("--") ? "0" : td.get(6).text();//涨跌幅(%)
-                                String cjl = td.get(7).text().equals("--") ? "0" : td.get(7).text().replaceAll(",", "");//成交量(手)
-                                String cjje = td.get(8).text().equals("--") ? "0" : td.get(8).text().replaceAll(",", "");//成交金额(万元)
-                                String zf = td.get(9).text().equals("--") ? "0" : td.get(9).text();//振幅(%)
-                                String hsl = td.get(10).text().equals("--") ? "0" : td.get(10).text();//换手率(%)
-                                String sqspj = new BigDecimal(spj).subtract(new BigDecimal(zde)).setScale(2, RoundingMode.HALF_EVEN).toString();//上期收盘价
-
-                                SHASecuritiesMarket shaSecuritiesMarket = shaSecuritiesMarketMapper.queryBySecuritiesIdAndDate(s.getId(), sdf1.parse(rq));
-                                if(null != shaSecuritiesMarket){
-                                    if(!StringUtils.hasLength(shaSecuritiesMarket.getLastClosingPrice())){
-                                        shaSecuritiesMarket.setLastClosingPrice(sqspj);
-                                    }
-                                    if(!StringUtils.hasLength(shaSecuritiesMarket.getClosingPrice())){
-                                        shaSecuritiesMarket.setClosingPrice(spj);
-                                    }
-                                    if(!StringUtils.hasLength(shaSecuritiesMarket.getRiseFallPrice())){
-                                        shaSecuritiesMarket.setRiseFallPrice(zde);
-                                    }
-                                    if(!StringUtils.hasLength(shaSecuritiesMarket.getRiseFallRatio())){
-                                        shaSecuritiesMarket.setRiseFallRatio(zdf);
-                                    }
-                                    if(!StringUtils.hasLength(shaSecuritiesMarket.getOpeningPrice())){
-                                        shaSecuritiesMarket.setOpeningPrice(kpj);
-                                    }
-                                    if(!StringUtils.hasLength(shaSecuritiesMarket.getTopPrice())){
-                                        shaSecuritiesMarket.setTopPrice(zgj);
-                                    }
-                                    if(!StringUtils.hasLength(shaSecuritiesMarket.getLowestPrice())){
-                                        shaSecuritiesMarket.setLowestPrice(zdj);
-                                    }
-                                    if(!StringUtils.hasLength(shaSecuritiesMarket.getAmplitude())){
-                                        shaSecuritiesMarket.setAmplitude(zf);
-                                    }
-                                    if(!StringUtils.hasLength(shaSecuritiesMarket.getVolume())){
-                                        shaSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
-                                    }
-                                    if(!StringUtils.hasLength(shaSecuritiesMarket.getDealAmount())){
-                                        shaSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
-                                    }
-                                    if(!StringUtils.hasLength(shaSecuritiesMarket.getTurnoverRate())){
-                                        shaSecuritiesMarket.setTurnoverRate(hsl);
-                                    }
-                                    shaSecuritiesMarketMapper.update(shaSecuritiesMarket);
-                                }else{
-                                    shaSecuritiesMarket = new SHASecuritiesMarket();
-                                    shaSecuritiesMarket.setSecuritiesId(s.getId());
-                                    shaSecuritiesMarket.setTradeDate(sdf1.parse(rq));
-                                    shaSecuritiesMarket.setLastClosingPrice(sqspj);
-                                    shaSecuritiesMarket.setClosingPrice(spj);
-                                    shaSecuritiesMarket.setRiseFallPrice(zde);
-                                    shaSecuritiesMarket.setRiseFallRatio(zdf);
-                                    shaSecuritiesMarket.setOpeningPrice(kpj);
-                                    shaSecuritiesMarket.setTopPrice(zgj);
-                                    shaSecuritiesMarket.setLowestPrice(zdj);
-                                    shaSecuritiesMarket.setAmplitude(zf);
-                                    shaSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
-                                    shaSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
-                                    shaSecuritiesMarket.setTurnoverRate(hsl);
-                                    shaSecuritiesMarketMapper.insert(shaSecuritiesMarket);
-                                }
-
-                            }
-                            quarter--;
-                            if(quarter == 0){
-                                break;
-                            }
+                            year--;
                         }
-                        if(b){//没有数据可采集。
-                            break;
-                        }
-                        year--;
+                        Thread.sleep(600000);//阻塞10分钟，释放http资源
                     }
+
                 }catch (Exception e){
                     e.printStackTrace();
                 }
             }
         }).start();
         return ResultUtil.success();
+    }
+
+
+    /**
+     * 盈亏量化数据（增量式：v = d1 + (d1 + d2) + (d1 + d2 + d3) + ...）
+     * @param code
+     * @param securitiesCategoryId
+     * @param date
+     * @param pageNo
+     * @param pageSize
+     * @return
+     * @throws Exception
+     */
+    @Override
+    public List<Map<String, Object>> profitAndLossOfQuantitative(String code, Integer securitiesCategoryId, String date, Integer pageNo, Integer pageSize) throws Exception {
+        Date start = null;
+        Date end = null;
+        pageNo = (pageNo - 1) * pageSize;
+        if(!"".equals(date) && null != date){
+            String[] split = date.split(" - ");
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            start = sdf.parse(split[0] + " 00:00:00");
+            end = sdf.parse(split[1] + " 23:59:59");
+        }
+        List<Securities> securities = securitiesMapper.queryList(code, securitiesCategoryId, pageNo, pageSize);
+        List<Map<String, Object>> list = new ArrayList<>();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyy-MM-dd");
+        SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy");
+        int y = Integer.valueOf(sdf1.format(new Date())) - 4;
+        for(Securities s : securities){
+            Map<String, Object> map = new HashMap<>();
+            map.put("name", s.getName() + "(" + s.getCode() + ")");
+            SecuritiesCategory securitiesCategory = securitiesCategoryService.selectById(s.getSecuritiesCategoryId());
+            List<String> d = new ArrayList<>();
+            List<Double> riseFallPrice = new ArrayList<>();
+            String startTime = "";
+            switch (securitiesCategory.getCode()){
+                case "sh_a":
+                    List<SHASecuritiesMarket> shaSecuritiesMarkets = shaSecuritiesMarketMapper.queryList(s.getId(), start, end);
+                    BigDecimal sh_a_v = new BigDecimal(0);
+                    for(SHASecuritiesMarket sha : shaSecuritiesMarkets){
+                        d.add(sdf.format(sha.getTradeDate()));
+                        sh_a_v = sh_a_v.add(new BigDecimal(sha.getRiseFallPrice()));
+                        riseFallPrice.add(sh_a_v.setScale(2, RoundingMode.HALF_EVEN).doubleValue());
+                        int y1 = Integer.valueOf(sdf1.format(sha.getTradeDate())).intValue();
+                        if(!StringUtils.hasLength(startTime) && y == y1){
+                            startTime = sdf.format(sha.getTradeDate());
+                        }
+                    }
+                    break;
+                case "sh_b":
+                    List<SHBSecuritiesMarket> shbSecuritiesMarkets = shbSecuritiesMarketMapper.queryList(s.getId(), start, end);
+                    BigDecimal sh_b_v = new BigDecimal(0);
+                    for(SHBSecuritiesMarket shb : shbSecuritiesMarkets){
+                        d.add(sdf.format(shb.getTradeDate()));
+                        sh_b_v = sh_b_v.add(new BigDecimal(shb.getRiseFallPrice()));
+                        riseFallPrice.add(sh_b_v.setScale(2, RoundingMode.HALF_EVEN).doubleValue());
+                        int y1 = Integer.valueOf(sdf1.format(shb.getTradeDate())).intValue();
+                        if(!StringUtils.hasLength(startTime) && y == y1){
+                            startTime = sdf.format(shb.getTradeDate());
+                        }
+                    }
+                    break;
+                case "sz_a":
+                    List<SZASecuritiesMarket> szaSecuritiesMarkets = szaSecuritiesMarketMapper.queryList(s.getId(), start, end);
+                    BigDecimal sz_a_v = new BigDecimal(0);
+                    for(SZASecuritiesMarket sza : szaSecuritiesMarkets){
+                        d.add(sdf.format(sza.getTradeDate()));
+                        sz_a_v = sz_a_v.add(new BigDecimal(sza.getRiseFallPrice()));
+                        riseFallPrice.add(sz_a_v.setScale(2, RoundingMode.HALF_EVEN).doubleValue());
+                        int y1 = Integer.valueOf(sdf1.format(sza.getTradeDate())).intValue();
+                        if(!StringUtils.hasLength(startTime) && y == y1){
+                            startTime = sdf.format(sza.getTradeDate());
+                        }
+
+                    }
+                    break;
+                case "sz_b":
+                    List<SZBSecuritiesMarket> szbSecuritiesMarkets = szbSecuritiesMarketMapper.queryList(s.getId(), start, end);
+                    BigDecimal sz_b_v = new BigDecimal(0);
+                    for(SZBSecuritiesMarket szb : szbSecuritiesMarkets){
+                        d.add(sdf.format(szb.getTradeDate()));
+                        sz_b_v = sz_b_v.add(new BigDecimal(szb.getRiseFallPrice()));
+                        riseFallPrice.add(sz_b_v.setScale(2, RoundingMode.HALF_EVEN).doubleValue());
+                        int y1 = Integer.valueOf(sdf1.format(szb.getTradeDate())).intValue();
+                        if(!StringUtils.hasLength(startTime) && y == y1){
+                            startTime = sdf.format(szb.getTradeDate());
+                        }
+                    }
+                    break;
+            }
+            map.put("id", s.getId());
+            map.put("latitude", d);
+            map.put("riseFallPrice", riseFallPrice);
+            map.put("startTime", startTime);
+            list.add(map);
+            break;// TODO: 2021/5/19 先查询一条数据
+        }
+        return list;
     }
 }

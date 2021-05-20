@@ -17,18 +17,4 @@ public class SecuritiesMarketController {
     private ISecuritiesMarketService securitiesMarketService;
 
 
-    /**
-     * 同步历史交易数据
-     * @return
-     */
-    @ResponseBody
-    @PostMapping("/synchronizeHistoricalData")
-    public ResultUtil synchronizeHistoricalData(Integer id){
-        try {
-            return securitiesMarketService.synchronizeHistoricalData(id);
-        }catch (Exception e){
-            e.printStackTrace();
-            return ResultUtil.runErr();
-        }
-    }
 }

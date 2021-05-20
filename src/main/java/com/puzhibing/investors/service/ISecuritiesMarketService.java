@@ -31,5 +31,18 @@ public interface ISecuritiesMarketService {
      * @return
      * @throws Exception
      */
-    ResultUtil synchronizeHistoricalData(Integer id);
+    ResultUtil synchronizeHistoricalData();
+
+
+    /**
+     * 盈亏量化数据（增量式：v = d1 + (d1 + d2) + (d1 + d2 + d3) + ...）
+     * @param code
+     * @param securitiesCategoryId
+     * @param date
+     * @param pageNo
+     * @param pageSize
+     * @return
+     * @throws Exception
+     */
+    List<Map<String, Object>> profitAndLossOfQuantitative(String code, Integer securitiesCategoryId, String date, Integer pageNo, Integer pageSize) throws Exception;
 }
