@@ -625,9 +625,13 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                                 HttpResult httpResult = httpClientUtil.pushHttpRequset("GET", url, null, null, "json");
                                 if(null == httpResult){
                                     System.err.println("数据请求异常");
+                                    b = true;
+                                    break;
                                 }
                                 if(httpResult.getCode() != 200){
                                     System.err.println(httpResult.getData());
+                                    b = true;
+                                    break;
                                 }
                                 Document document = Jsoup.parse(httpResult.getData());
                                 Element element = document.getElementsByClass("table_bg001").get(0);
