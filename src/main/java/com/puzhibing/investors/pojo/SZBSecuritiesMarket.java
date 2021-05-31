@@ -8,7 +8,7 @@ import java.util.Date;
  * 深证B股证券日行情
  */
 @Data
-public class SZBSecuritiesMarket {
+public class SZBSecuritiesMarket implements Comparable {
     /**
      * 主键
      */
@@ -65,4 +65,22 @@ public class SZBSecuritiesMarket {
      * 换手率（%）
      */
     private String turnoverRate;
+
+    @Override
+    public int compareTo(Object o) {
+        if (o instanceof SZBSecuritiesMarket) {
+            SZBSecuritiesMarket szb = (SZBSecuritiesMarket) o;
+            if (this.tradeDate == null || szb.tradeDate == null) {
+                return -1;
+            }
+            if (this.tradeDate.getTime() < szb.getTradeDate().getTime()) {
+                return -1;
+            } else if (this.tradeDate.getTime() == szb.getTradeDate().getTime()) {
+                return 0;
+            } else {
+                return 1;
+            }
+        }
+        return 0;
+    }
 }

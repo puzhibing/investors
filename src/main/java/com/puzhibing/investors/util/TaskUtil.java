@@ -37,7 +37,7 @@ public class TaskUtil {
 
 
     /**
-     * 每天的20点执行的任务
+     * 每天的17点执行的任务
      */
     @Scheduled(cron = "0 0 17 * * *")
     public void taskDay(){
@@ -45,15 +45,6 @@ public class TaskUtil {
             securitiesService.pullSecurities();
             Thread.sleep(60 * 1000);
             securitiesMarketService.pullSecuritiesMarket();
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-    }
-
-    @Scheduled(cron = "0 0 18 * * *")
-    public void taskDay1(){
-        try {
-            securitiesMarketService.synchronizeHistoricalData();
         }catch (Exception e){
             e.printStackTrace();
         }

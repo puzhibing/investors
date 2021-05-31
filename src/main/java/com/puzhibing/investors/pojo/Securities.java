@@ -38,4 +38,8 @@ public class Securities {
      * 上市地点
      */
     private String marketAddress;
+    /**
+     * 流通股本
+     */
+    private Long flowEquity;
 }

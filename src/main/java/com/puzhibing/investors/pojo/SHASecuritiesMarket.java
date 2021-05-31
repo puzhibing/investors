@@ -8,7 +8,7 @@ import java.util.Date;
  * 上海A股证券日行情
  */
 @Data
-public class SHASecuritiesMarket {
+public class SHASecuritiesMarket implements Comparable {
     /**
      * 主键
      */
@@ -65,4 +65,22 @@ public class SHASecuritiesMarket {
      * 换手率（%）
      */
     private String turnoverRate;
+
+    @Override
+    public int compareTo(Object o) {
+        if (o instanceof SHASecuritiesMarket) {
+            SHASecuritiesMarket sha = (SHASecuritiesMarket) o;
+            if (this.tradeDate == null || sha.tradeDate == null) {
+                return -1;
+            }
+            if (this.tradeDate.getTime() < sha.getTradeDate().getTime()) {
+                return -1;
+            } else if (this.tradeDate.getTime() == sha.getTradeDate().getTime()) {
+                return 0;
+            } else {
+                return 1;
+            }
+        }
+        return 0;
+    }
 }

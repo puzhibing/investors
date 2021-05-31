@@ -45,4 +45,12 @@ public interface ISecuritiesMarketService {
      * @throws Exception
      */
     List<Map<String, Object>> profitAndLossOfQuantitative(String code, Integer securitiesCategoryId, String date, Integer pageNo, Integer pageSize) throws Exception;
+
+
+    /**
+     * 初始化数据到缓存中
+     * @return
+     * @throws Exception
+     */
+    void initMarketToCache() throws Exception;
 }

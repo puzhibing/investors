@@ -8,7 +8,6 @@ import com.puzhibing.investors.pojo.Securities;
 import com.puzhibing.investors.pojo.SecuritiesCategory;
 import com.puzhibing.investors.service.ISecuritiesCategoryService;
 import com.puzhibing.investors.service.ISecuritiesService;
-import com.puzhibing.investors.util.ResultUtil;
 import com.puzhibing.investors.util.http.HttpClientUtil;
 import com.puzhibing.investors.util.http.HttpResult;
 import org.jsoup.Jsoup;
@@ -64,6 +63,7 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
             String name = jsonObject.getString("SECURITY_ABBR_A");
             String code = jsonObject.getString("SECURITY_CODE_A");
             String listing_date = jsonObject.getString("LISTING_DATE");
+            String companyCode = jsonObject.getString("COMPANY_CODE");//公司代码
 
             Securities securities = securitiesMapper.queryByCodeAndSecuritiesCategory(code, sh_a.getId());
             if(null == securities){
@@ -76,6 +76,22 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
                 securities.setMarketAddress("上海证券交易所");
                 securitiesMapper.insert(securities);
             }
+            //更新股本数据
+             String urlSHA_ = "http://query.sse.com.cn/commonQuery.do?isPagination=false&sqlId=COMMON_SSE_CP_GPLB_GPGK_GBJG_C&companyCode=" + companyCode;
+            header = new HashMap<>();
+            header.put("Referer", "http://www.sse.com.cn/");
+            httpResult = httpClientUtil.pushHttpRequset("GET", urlSHA_, null, header, null);
+            if(null == httpResult){
+                System.err.println("数据请求异常");
+            }
+            if(httpResult.getCode() != 200){
+                System.err.println(httpResult.getData());
+            }
+            JSONArray result1 = JSON.parseObject(httpResult.getData()).getJSONArray("result");
+            JSONObject jsonObject1 = result1.getJSONObject(0);
+            Long flowEquity = Double.valueOf(jsonObject1.getDouble("UNLIMITED_A_SHARES") * 10000).longValue();
+            securities.setFlowEquity(flowEquity);
+            securitiesMapper.updateById(securities);
         }
 
 
@@ -99,6 +115,7 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
             String name = jsonObject.getString("SECURITY_ABBR_B");
             String code = jsonObject.getString("SECURITY_CODE_B");
             String listing_date = jsonObject.getString("LISTING_DATE");
+            String companyCode = jsonObject.getString("COMPANY_CODE");//公司代码
 
             Securities securities = securitiesMapper.queryByCodeAndSecuritiesCategory(code, sh_b.getId());
             if(null == securities){
@@ -111,6 +128,27 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
                 securities.setMarketAddress("上海证券交易所");
                 securitiesMapper.insert(securities);
             }
+            //更新股本数据
+            String urlSHB_ = "http://query.sse.com.cn/commonQuery.do?isPagination=false&sqlId=COMMON_SSE_CP_GPLB_GPGK_GBJG_C&companyCode=" + companyCode;
+            header = new HashMap<>();
+            header.put("Referer", "http://www.sse.com.cn/");
+            httpResult = httpClientUtil.pushHttpRequset("GET", urlSHB_, null, header, null);
+            if(null == httpResult){
+                System.err.println("数据请求异常");
+            }
+            if(httpResult.getCode() != 200){
+                System.err.println(httpResult.getData());
+            }
+            JSONArray result1 = JSON.parseObject(httpResult.getData()).getJSONArray("result");
+            if(result1.size() == 0){
+                securities.setFlowEquity(0L);
+                securitiesMapper.updateById(securities);
+                continue;
+            }
+            JSONObject jsonObject1 = result1.getJSONObject(0);
+            Long flowEquity = Double.valueOf(jsonObject1.getDouble("B_SHARES") * 10000).longValue();
+            securities.setFlowEquity(flowEquity);
+            securitiesMapper.updateById(securities);
         }
 
         /**
@@ -123,9 +161,11 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
             httpResult = httpClientUtil.pushHttpRequset("GET", urlSZA, null, header, null);
             if(null == httpResult){
                 System.err.println("数据请求异常");
+                continue;
             }
             if(httpResult.getCode() != 200){
                 System.err.println(httpResult.getData());
+                continue;
             }
             result = JSON.parseArray(httpResult.getData()).getJSONObject(0).getJSONArray("data");
             SecuritiesCategory sz_a = securitiesCategoryService.queryByCode("sz_a");
@@ -147,6 +187,20 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
                     securities.setMarketAddress("深证证券交易所");
                     securitiesMapper.insert(securities);
                 }
+                //更新股本数据
+                String urlSZA_ = "http://www.szse.cn/api/report/index/companyGeneralization?secCode=" + code;
+                httpResult = httpClientUtil.pushHttpRequset("GET", urlSZA_, null, header, null);
+                if(null == httpResult){
+                    System.err.println("数据请求异常");
+                }
+                if(httpResult.getCode() != 200){
+                    System.err.println(httpResult.getData());
+                }
+                JSONObject data = JSON.parseObject(httpResult.getData()).getJSONObject("data");
+                String agltgb = data.getString("agltgb");
+                Long flowEquity = Double.valueOf(data.getDouble(agltgb) * 10000).longValue();
+                securities.setFlowEquity(flowEquity);
+                securitiesMapper.updateById(securities);
             }
             if(result.size() == 0){
                 break;
@@ -164,9 +218,11 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
             httpResult = httpClientUtil.pushHttpRequset("GET", urlSZB, null, header, null);
             if(null == httpResult){
                 System.err.println("数据请求异常");
+                continue;
             }
             if(httpResult.getCode() != 200){
                 System.err.println(httpResult.getData());
+                continue;
             }
             result = JSON.parseArray(httpResult.getData()).getJSONObject(1).getJSONArray("data");
             SecuritiesCategory sz_b = securitiesCategoryService.queryByCode("sz_b");
@@ -188,6 +244,20 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
                     securities.setMarketAddress("深证证券交易所");
                     securitiesMapper.insert(securities);
                 }
+                //更新股本数据
+                String urlSZB_ = "http://www.szse.cn/api/report/index/companyGeneralization?secCode=" + code;
+                httpResult = httpClientUtil.pushHttpRequset("GET", urlSZB_, null, header, null);
+                if(null == httpResult){
+                    System.err.println("数据请求异常");
+                }
+                if(httpResult.getCode() != 200){
+                    System.err.println(httpResult.getData());
+                }
+                JSONObject data = JSON.parseObject(httpResult.getData()).getJSONObject("data");
+                String agltgb = data.getString("agltgb").replaceAll(",", "");
+                Long flowEquity = Double.valueOf(data.getDouble(agltgb) * 10000).longValue();
+                securities.setFlowEquity(flowEquity);
+                securitiesMapper.updateById(securities);
             }
             if(result.size() == 0){
                 break;
@@ -195,8 +265,5 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
             l++;
         }
     }
-
-
-
 
 }

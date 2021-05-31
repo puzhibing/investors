@@ -59,4 +59,13 @@ public interface SecuritiesMapper {
     @SelectProvider(type = SecuritiesSqlProvider.class, method = "selectById")
     Securities selectById(@Param("id") Integer id);
 
+
+    /**
+     * 修改数据
+     * @param securities
+     * @return
+     */
+    @UpdateProvider(type = SecuritiesSqlProvider.class, method = "updateById")
+    void updateById(Securities securities);
+
 }

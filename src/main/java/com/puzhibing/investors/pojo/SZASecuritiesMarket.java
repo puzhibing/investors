@@ -8,7 +8,7 @@ import java.util.Date;
  * 深圳A股证券日行情
  */
 @Data
-public class SZASecuritiesMarket {
+public class SZASecuritiesMarket implements Comparable {
     /**
      * 主键
      */
@@ -65,4 +65,22 @@ public class SZASecuritiesMarket {
      * 换手率（%）
      */
     private String turnoverRate;
+
+    @Override
+    public int compareTo(Object o) {
+        if (o instanceof SZASecuritiesMarket) {
+            SZASecuritiesMarket sza = (SZASecuritiesMarket) o;
+            if (this.tradeDate == null || sza.tradeDate == null) {
+                return -1;
+            }
+            if (this.tradeDate.getTime() < sza.getTradeDate().getTime()) {
+                return -1;
+            } else if (this.tradeDate.getTime() == sza.getTradeDate().getTime()) {
+                return 0;
+            } else {
+                return 1;
+            }
+        }
+        return 0;
+    }
 }

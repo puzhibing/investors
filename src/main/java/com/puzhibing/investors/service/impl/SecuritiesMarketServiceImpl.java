@@ -5,12 +5,15 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.puzhibing.investors.dao.*;
 import com.puzhibing.investors.pojo.*;
-import com.puzhibing.investors.service.ISecuritiesCategoryService;
-import com.puzhibing.investors.service.ISecuritiesMarketService;
+import com.puzhibing.investors.service.*;
+import com.puzhibing.investors.util.CacheUtil;
 import com.puzhibing.investors.util.DateUtil;
+import com.puzhibing.investors.util.FileUtil;
 import com.puzhibing.investors.util.http.HttpClientUtil;
 import com.puzhibing.investors.util.ResultUtil;
 import com.puzhibing.investors.util.http.HttpResult;
+import com.puzhibing.investors.util.redis.RedisUtil;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -39,17 +42,23 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
     @Autowired
     private ISecuritiesCategoryService securitiesCategoryService;
 
-    @Resource
-    private SHASecuritiesMarketMapper shaSecuritiesMarketMapper;
+    @Autowired
+    private ISHASecuritiesMarketService shaSecuritiesMarketService;
 
-    @Resource
-    private SHBSecuritiesMarketMapper shbSecuritiesMarketMapper;
+    @Autowired
+    private ISHBSecuritiesMarketService shbSecuritiesMarketService;
 
-    @Resource
-    private SZASecuritiesMarketMapper szaSecuritiesMarketMapper;
+    @Autowired
+    private ISZASecuritiesMarketService szaSecuritiesMarketService;
 
-    @Resource
-    private SZBSecuritiesMarketMapper szbSecuritiesMarketMapper;
+    @Autowired
+    private ISZBSecuritiesMarketService szbSecuritiesMarketService;
+
+    @Autowired
+    private RedisUtil redisUtil;
+
+    @Autowired
+    private FileUtil fileUtil;
 
     private Integer pageSize = 5000;
 
@@ -94,24 +103,43 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             String zdje = jsonArray.getString(11);//涨跌金额
             String zfl = jsonArray.getString(12);//振幅率（%）
 
+
             Securities securities = securitiesMapper.queryByCodeAndSecuritiesCategory(code, sh_a.getId());
-            SHASecuritiesMarket shaSecuritiesMarket = shaSecuritiesMarketMapper.queryBySecuritiesIdAndDate(securities.getId(), sdf.parse(date));
-            if(null == shaSecuritiesMarket){
-                shaSecuritiesMarket = new SHASecuritiesMarket();
-                shaSecuritiesMarket.setSecuritiesId(securities.getId());
-                shaSecuritiesMarket.setTradeDate(sdf.parse(date));
-                shaSecuritiesMarket.setClosingPrice(spj);
-                shaSecuritiesMarket.setRiseFallPrice(zdje);
-                shaSecuritiesMarket.setRiseFallRatio(zdl);
-                shaSecuritiesMarket.setOpeningPrice(kpj);
-                shaSecuritiesMarket.setTopPrice(zgj);
-                shaSecuritiesMarket.setLowestPrice(zdj);
-                shaSecuritiesMarket.setAmplitude(zfl);
-                shaSecuritiesMarket.setVolume(cjl);
-                shaSecuritiesMarket.setDealAmount(cjje);
-                shaSecuritiesMarket.setLastClosingPrice(sqspj);
-                shaSecuritiesMarketMapper.insert(shaSecuritiesMarket);
-            }
+            SHASecuritiesMarket shaSecuritiesMarket = new SHASecuritiesMarket();
+            shaSecuritiesMarket.setSecuritiesId(securities.getId());
+            shaSecuritiesMarket.setTradeDate(sdf.parse(date));
+            shaSecuritiesMarket.setClosingPrice(spj);
+            shaSecuritiesMarket.setRiseFallPrice(zdje);
+            shaSecuritiesMarket.setRiseFallRatio(zdl);
+            shaSecuritiesMarket.setOpeningPrice(kpj);
+            shaSecuritiesMarket.setTopPrice(zgj);
+            shaSecuritiesMarket.setLowestPrice(zdj);
+            shaSecuritiesMarket.setAmplitude(zfl);
+            shaSecuritiesMarket.setVolume(cjl);
+            shaSecuritiesMarket.setDealAmount(cjje);
+            shaSecuritiesMarket.setLastClosingPrice(sqspj);
+            String string = new BigDecimal(cjl).divide(new BigDecimal(securities.getFlowEquity()), new MathContext(2, RoundingMode.HALF_EVEN)).toString();
+            shaSecuritiesMarket.setTurnoverRate(string);
+            saveMarketToFile(securities.getSystemCode(), shaSecuritiesMarket, shaSecuritiesMarket.getTradeDate());//保存数据到文件中
+
+
+//            SHASecuritiesMarket shaSecuritiesMarket = shaSecuritiesMarketMapper.queryBySecuritiesIdAndDate(securities.getId(), sdf.parse(date));
+//            if(null == shaSecuritiesMarket){
+//                shaSecuritiesMarket = new SHASecuritiesMarket();
+//                shaSecuritiesMarket.setSecuritiesId(securities.getId());
+//                shaSecuritiesMarket.setTradeDate(sdf.parse(date));
+//                shaSecuritiesMarket.setClosingPrice(spj);
+//                shaSecuritiesMarket.setRiseFallPrice(zdje);
+//                shaSecuritiesMarket.setRiseFallRatio(zdl);
+//                shaSecuritiesMarket.setOpeningPrice(kpj);
+//                shaSecuritiesMarket.setTopPrice(zgj);
+//                shaSecuritiesMarket.setLowestPrice(zdj);
+//                shaSecuritiesMarket.setAmplitude(zfl);
+//                shaSecuritiesMarket.setVolume(cjl);
+//                shaSecuritiesMarket.setDealAmount(cjje);
+//                shaSecuritiesMarket.setLastClosingPrice(sqspj);
+//                shaSecuritiesMarketMapper.insert(shaSecuritiesMarket);
+//            }
         }
 
         /**
@@ -148,23 +176,40 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             String zfl = jsonArray.getString(12);//振幅率（%）
 
             Securities securities = securitiesMapper.queryByCodeAndSecuritiesCategory(code, sh_b.getId());
-            SHBSecuritiesMarket shbSecuritiesMarket = shbSecuritiesMarketMapper.queryBySecuritiesIdAndDate(securities.getId(), sdf.parse(date));
-            if(null == shbSecuritiesMarket){
-                shbSecuritiesMarket = new SHBSecuritiesMarket();
-                shbSecuritiesMarket.setSecuritiesId(securities.getId());
-                shbSecuritiesMarket.setTradeDate(sdf.parse(date));
-                shbSecuritiesMarket.setClosingPrice(spj);
-                shbSecuritiesMarket.setRiseFallPrice(zdje);
-                shbSecuritiesMarket.setRiseFallRatio(zdl);
-                shbSecuritiesMarket.setOpeningPrice(kpj);
-                shbSecuritiesMarket.setTopPrice(zgj);
-                shbSecuritiesMarket.setLowestPrice(zdj);
-                shbSecuritiesMarket.setAmplitude(zfl);
-                shbSecuritiesMarket.setVolume(cjl);
-                shbSecuritiesMarket.setDealAmount(cjje);
-                shbSecuritiesMarket.setLastClosingPrice(sqspj);
-                shbSecuritiesMarketMapper.insert(shbSecuritiesMarket);
-            }
+            SHBSecuritiesMarket shbSecuritiesMarket = new SHBSecuritiesMarket();
+            shbSecuritiesMarket.setSecuritiesId(securities.getId());
+            shbSecuritiesMarket.setTradeDate(sdf.parse(date));
+            shbSecuritiesMarket.setClosingPrice(spj);
+            shbSecuritiesMarket.setRiseFallPrice(zdje);
+            shbSecuritiesMarket.setRiseFallRatio(zdl);
+            shbSecuritiesMarket.setOpeningPrice(kpj);
+            shbSecuritiesMarket.setTopPrice(zgj);
+            shbSecuritiesMarket.setLowestPrice(zdj);
+            shbSecuritiesMarket.setAmplitude(zfl);
+            shbSecuritiesMarket.setVolume(cjl);
+            shbSecuritiesMarket.setDealAmount(cjje);
+            shbSecuritiesMarket.setLastClosingPrice(sqspj);
+            String string = new BigDecimal(cjl).divide(new BigDecimal(securities.getFlowEquity()), new MathContext(2, RoundingMode.HALF_EVEN)).toString();
+            shbSecuritiesMarket.setTurnoverRate(string);
+            saveMarketToFile(securities.getSystemCode(), shbSecuritiesMarket, shbSecuritiesMarket.getTradeDate());//保存数据到文件中
+
+//            SHBSecuritiesMarket shbSecuritiesMarket = shbSecuritiesMarketMapper.queryBySecuritiesIdAndDate(securities.getId(), sdf.parse(date));
+//            if(null == shbSecuritiesMarket){
+//                shbSecuritiesMarket = new SHBSecuritiesMarket();
+//                shbSecuritiesMarket.setSecuritiesId(securities.getId());
+//                shbSecuritiesMarket.setTradeDate(sdf.parse(date));
+//                shbSecuritiesMarket.setClosingPrice(spj);
+//                shbSecuritiesMarket.setRiseFallPrice(zdje);
+//                shbSecuritiesMarket.setRiseFallRatio(zdl);
+//                shbSecuritiesMarket.setOpeningPrice(kpj);
+//                shbSecuritiesMarket.setTopPrice(zgj);
+//                shbSecuritiesMarket.setLowestPrice(zdj);
+//                shbSecuritiesMarket.setAmplitude(zfl);
+//                shbSecuritiesMarket.setVolume(cjl);
+//                shbSecuritiesMarket.setDealAmount(cjje);
+//                shbSecuritiesMarket.setLastClosingPrice(sqspj);
+//                shbSecuritiesMarketMapper.insert(shbSecuritiesMarket);
+//            }
         }
 
         /**
@@ -178,9 +223,11 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             httpResult = httpClientUtil.pushHttpRequset("GET", urlSZ, null, header, null);
             if(null == httpResult){
                 System.err.println("数据请求异常");
+                continue;
             }
             if(httpResult.getCode() != 200){
                 System.err.println(httpResult.getData());
+                continue;
             }
             JSONObject jsonObject1 = JSON.parseObject(httpResult.getData());
             jsonObject = jsonObject1.getJSONObject("data");
@@ -223,24 +270,41 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                 }
             }
 
-            SZASecuritiesMarket szaSecuritiesMarket = szaSecuritiesMarketMapper.queryBySecuritiesIdAndDate(securities.getId(), sdf1.parse(datetime));
-            if(null == szaSecuritiesMarket){
-                szaSecuritiesMarket = new SZASecuritiesMarket();
-                szaSecuritiesMarket.setSecuritiesId(securities.getId());
-                szaSecuritiesMarket.setTradeDate(sdf1.parse(datetime));
-                szaSecuritiesMarket.setClosingPrice(spj);
-                szaSecuritiesMarket.setRiseFallPrice(zdje);
-                szaSecuritiesMarket.setRiseFallRatio(zdl);
-                szaSecuritiesMarket.setOpeningPrice(kpj);
-                szaSecuritiesMarket.setTopPrice(zgj);
-                szaSecuritiesMarket.setLowestPrice(zdj);
-                szaSecuritiesMarket.setAmplitude(zfl);
-                szaSecuritiesMarket.setVolume(cjl);
-                szaSecuritiesMarket.setDealAmount(cjje);
-                szaSecuritiesMarket.setLastClosingPrice(sqspj);
-                szaSecuritiesMarketMapper.insert(szaSecuritiesMarket);
-            }
+            SZASecuritiesMarket szaSecuritiesMarket = new SZASecuritiesMarket();
+            szaSecuritiesMarket.setSecuritiesId(securities.getId());
+            szaSecuritiesMarket.setTradeDate(sdf1.parse(datetime));
+            szaSecuritiesMarket.setClosingPrice(spj);
+            szaSecuritiesMarket.setRiseFallPrice(zdje);
+            szaSecuritiesMarket.setRiseFallRatio(zdl);
+            szaSecuritiesMarket.setOpeningPrice(kpj);
+            szaSecuritiesMarket.setTopPrice(zgj);
+            szaSecuritiesMarket.setLowestPrice(zdj);
+            szaSecuritiesMarket.setAmplitude(zfl);
+            szaSecuritiesMarket.setVolume(cjl);
+            szaSecuritiesMarket.setDealAmount(cjje);
+            szaSecuritiesMarket.setLastClosingPrice(sqspj);
+            String string = new BigDecimal(cjl).divide(new BigDecimal(securities.getFlowEquity()), new MathContext(2, RoundingMode.HALF_EVEN)).toString();
+            szaSecuritiesMarket.setTurnoverRate(string);
+            saveMarketToFile(securities.getSystemCode(), szaSecuritiesMarket, szaSecuritiesMarket.getTradeDate());//保存数据到文件中
 
+//            SZASecuritiesMarket szaSecuritiesMarket = szaSecuritiesMarketMapper.queryBySecuritiesIdAndDate(securities.getId(), sdf1.parse(datetime));
+//            if(null == szaSecuritiesMarket){
+//                szaSecuritiesMarket = new SZASecuritiesMarket();
+//                szaSecuritiesMarket.setSecuritiesId(securities.getId());
+//                szaSecuritiesMarket.setTradeDate(sdf1.parse(datetime));
+//                szaSecuritiesMarket.setClosingPrice(spj);
+//                szaSecuritiesMarket.setRiseFallPrice(zdje);
+//                szaSecuritiesMarket.setRiseFallRatio(zdl);
+//                szaSecuritiesMarket.setOpeningPrice(kpj);
+//                szaSecuritiesMarket.setTopPrice(zgj);
+//                szaSecuritiesMarket.setLowestPrice(zdj);
+//                szaSecuritiesMarket.setAmplitude(zfl);
+//                szaSecuritiesMarket.setVolume(cjl);
+//                szaSecuritiesMarket.setDealAmount(cjje);
+//                szaSecuritiesMarket.setLastClosingPrice(sqspj);
+//                szaSecuritiesMarketMapper.insert(szaSecuritiesMarket);
+//            }
+//            Thread.sleep(30 * 1000);
         }
 
 
@@ -255,9 +319,11 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             httpResult = httpClientUtil.pushHttpRequset("GET", urlSZ, null, header, null);
             if(null == httpResult){
                 System.err.println("数据请求异常");
+                continue;
             }
             if(httpResult.getCode() != 200){
                 System.err.println(httpResult.getData());
+                continue;
             }
             JSONObject jsonObject1 = JSON.parseObject(httpResult.getData());
             jsonObject = jsonObject1.getJSONObject("data");
@@ -299,24 +365,41 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                     inout = ("plus".equals(direction) ? (inout + num) : (inout - num));
                 }
             }
+            SZBSecuritiesMarket szbSecuritiesMarket = new SZBSecuritiesMarket();
+            szbSecuritiesMarket.setSecuritiesId(securities.getId());
+            szbSecuritiesMarket.setTradeDate(sdf1.parse(datetime));
+            szbSecuritiesMarket.setClosingPrice(spj);
+            szbSecuritiesMarket.setRiseFallPrice(zdje);
+            szbSecuritiesMarket.setRiseFallRatio(zdl);
+            szbSecuritiesMarket.setOpeningPrice(kpj);
+            szbSecuritiesMarket.setTopPrice(zgj);
+            szbSecuritiesMarket.setLowestPrice(zdj);
+            szbSecuritiesMarket.setAmplitude(zfl);
+            szbSecuritiesMarket.setVolume(cjl);
+            szbSecuritiesMarket.setDealAmount(cjje);
+            szbSecuritiesMarket.setLastClosingPrice(sqspj);
+            String string = new BigDecimal(cjl).divide(new BigDecimal(securities.getFlowEquity()), new MathContext(2, RoundingMode.HALF_EVEN)).toString();
+            szbSecuritiesMarket.setTurnoverRate(string);
+            saveMarketToFile(securities.getSystemCode(), szbSecuritiesMarket, szbSecuritiesMarket.getTradeDate());//保存数据到文件中
 
-            SZBSecuritiesMarket szbSecuritiesMarket = szbSecuritiesMarketMapper.queryBySecuritiesIdAndDate(securities.getId(), sdf1.parse(datetime));
-            if(null == szbSecuritiesMarket){
-                szbSecuritiesMarket = new SZBSecuritiesMarket();
-                szbSecuritiesMarket.setSecuritiesId(securities.getId());
-                szbSecuritiesMarket.setTradeDate(sdf1.parse(datetime));
-                szbSecuritiesMarket.setClosingPrice(spj);
-                szbSecuritiesMarket.setRiseFallPrice(zdje);
-                szbSecuritiesMarket.setRiseFallRatio(zdl);
-                szbSecuritiesMarket.setOpeningPrice(kpj);
-                szbSecuritiesMarket.setTopPrice(zgj);
-                szbSecuritiesMarket.setLowestPrice(zdj);
-                szbSecuritiesMarket.setAmplitude(zfl);
-                szbSecuritiesMarket.setVolume(cjl);
-                szbSecuritiesMarket.setDealAmount(cjje);
-                szbSecuritiesMarket.setLastClosingPrice(sqspj);
-                szbSecuritiesMarketMapper.insert(szbSecuritiesMarket);
-            }
+//            SZBSecuritiesMarket szbSecuritiesMarket = szbSecuritiesMarketMapper.queryBySecuritiesIdAndDate(securities.getId(), sdf1.parse(datetime));
+//            if(null == szbSecuritiesMarket){
+//                szbSecuritiesMarket = new SZBSecuritiesMarket();
+//                szbSecuritiesMarket.setSecuritiesId(securities.getId());
+//                szbSecuritiesMarket.setTradeDate(sdf1.parse(datetime));
+//                szbSecuritiesMarket.setClosingPrice(spj);
+//                szbSecuritiesMarket.setRiseFallPrice(zdje);
+//                szbSecuritiesMarket.setRiseFallRatio(zdl);
+//                szbSecuritiesMarket.setOpeningPrice(kpj);
+//                szbSecuritiesMarket.setTopPrice(zgj);
+//                szbSecuritiesMarket.setLowestPrice(zdj);
+//                szbSecuritiesMarket.setAmplitude(zfl);
+//                szbSecuritiesMarket.setVolume(cjl);
+//                szbSecuritiesMarket.setDealAmount(cjje);
+//                szbSecuritiesMarket.setLastClosingPrice(sqspj);
+//                szbSecuritiesMarketMapper.insert(szbSecuritiesMarket);
+//            }
+//            Thread.sleep(30 * 1000);
         }
     }
 
@@ -360,7 +443,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             String startTime = "";
             switch (securitiesCategory.getCode()){
                 case "sh_a":
-                    List<SHASecuritiesMarket> shaSecuritiesMarkets = shaSecuritiesMarketMapper.queryList(s.getId(), start, end);
+                    List<SHASecuritiesMarket> shaSecuritiesMarkets = shaSecuritiesMarketService.queryList(s.getId(), start, end);;
                     for(SHASecuritiesMarket sha : shaSecuritiesMarkets){
                         d.add(sdf.format(sha.getTradeDate()));
                         day.add(Double.valueOf(sha.getClosingPrice()));//收盘价
@@ -388,7 +471,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                     }
                     break;
                 case "sh_b":
-                    List<SHBSecuritiesMarket> shbSecuritiesMarkets = shbSecuritiesMarketMapper.queryList(s.getId(), start, end);
+                    List<SHBSecuritiesMarket> shbSecuritiesMarkets = shbSecuritiesMarketService.queryList(s.getId(), start, end);
                     for(SHBSecuritiesMarket shb : shbSecuritiesMarkets){
                         d.add(sdf.format(shb.getTradeDate()));
                         day.add(Double.valueOf(shb.getClosingPrice()));//收盘价
@@ -415,7 +498,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                     }
                     break;
                 case "sz_a":
-                    List<SZASecuritiesMarket> szaSecuritiesMarkets = szaSecuritiesMarketMapper.queryList(s.getId(), start, end);
+                    List<SZASecuritiesMarket> szaSecuritiesMarkets = szaSecuritiesMarketService.queryList(s.getId(), start, end);
                     for(SZASecuritiesMarket sza : szaSecuritiesMarkets){
                         d.add(sdf.format(sza.getTradeDate()));
                         day.add(Double.valueOf(sza.getClosingPrice()));//收盘价
@@ -442,7 +525,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                     }
                     break;
                 case "sz_b":
-                    List<SZBSecuritiesMarket> szbSecuritiesMarkets = szbSecuritiesMarketMapper.queryList(s.getId(), start, end);
+                    List<SZBSecuritiesMarket> szbSecuritiesMarkets = szbSecuritiesMarketService.queryList(s.getId(), start, end);
                     for(SZBSecuritiesMarket szb : szbSecuritiesMarkets){
                         d.add(sdf.format(szb.getTradeDate()));
                         day.add(Double.valueOf(szb.getClosingPrice()));//收盘价
@@ -506,28 +589,28 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
         BigDecimal sum = new BigDecimal(0);
         switch (type){
             case "sh_a":
-                List<SHASecuritiesMarket> shaSecuritiesMarkets = shaSecuritiesMarketMapper.queryList(securitiesId, start, end);
+                List<SHASecuritiesMarket> shaSecuritiesMarkets = shaSecuritiesMarketService.queryList(securitiesId, start, end);
                 for (SHASecuritiesMarket shaSecuritiesMarket : shaSecuritiesMarkets) {
                     sum = sum.add(new BigDecimal(shaSecuritiesMarket.getClosingPrice()));
                 }
                 avg = sum.divide(new BigDecimal(shaSecuritiesMarkets.size()), 2, RoundingMode.HALF_EVEN).doubleValue();
                 break;
             case "sh_b":
-                List<SHBSecuritiesMarket> shbSecuritiesMarkets = shbSecuritiesMarketMapper.queryList(securitiesId, start, end);
+                List<SHBSecuritiesMarket> shbSecuritiesMarkets = shbSecuritiesMarketService.queryList(securitiesId, start, end);
                 for (SHBSecuritiesMarket shbSecuritiesMarket : shbSecuritiesMarkets) {
                     sum = sum.add(new BigDecimal(shbSecuritiesMarket.getClosingPrice()));
                 }
                 avg = sum.divide(new BigDecimal(shbSecuritiesMarkets.size()), 2, RoundingMode.HALF_EVEN).doubleValue();
                 break;
             case "sz_a":
-                List<SZASecuritiesMarket> szaSecuritiesMarkets = szaSecuritiesMarketMapper.queryList(securitiesId, start, end);
+                List<SZASecuritiesMarket> szaSecuritiesMarkets = szaSecuritiesMarketService.queryList(securitiesId, start, end);
                 for (SZASecuritiesMarket szaSecuritiesMarket : szaSecuritiesMarkets) {
                     sum = sum.add(new BigDecimal(szaSecuritiesMarket.getClosingPrice()));
                 }
                 avg = sum.divide(new BigDecimal(szaSecuritiesMarkets.size()), 2, RoundingMode.HALF_EVEN).doubleValue();
                 break;
             case "sz_b":
-                List<SZBSecuritiesMarket> szbSecuritiesMarkets = szbSecuritiesMarketMapper.queryList(securitiesId, start, end);
+                List<SZBSecuritiesMarket> szbSecuritiesMarkets = szbSecuritiesMarketService.queryList(securitiesId, start, end);
                 for (SZBSecuritiesMarket szbSecuritiesMarket : szbSecuritiesMarkets) {
                     sum = sum.add(new BigDecimal(szbSecuritiesMarket.getClosingPrice()));
                 }
@@ -557,28 +640,28 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
         BigDecimal sum = new BigDecimal(0);
         switch (type){
             case "sh_a":
-                List<SHASecuritiesMarket> shaSecuritiesMarkets = shaSecuritiesMarketMapper.queryList(securitiesId, start, end);
+                List<SHASecuritiesMarket> shaSecuritiesMarkets = shaSecuritiesMarketService.queryList(securitiesId, start, end);
                 for (SHASecuritiesMarket shaSecuritiesMarket : shaSecuritiesMarkets) {
                     sum = sum.add(new BigDecimal(shaSecuritiesMarket.getClosingPrice()));
                 }
                 avg = sum.divide(new BigDecimal(shaSecuritiesMarkets.size()), 2, RoundingMode.HALF_EVEN).doubleValue();
                 break;
             case "sh_b":
-                List<SHBSecuritiesMarket> shbSecuritiesMarkets = shbSecuritiesMarketMapper.queryList(securitiesId, start, end);
+                List<SHBSecuritiesMarket> shbSecuritiesMarkets = shbSecuritiesMarketService.queryList(securitiesId, start, end);
                 for (SHBSecuritiesMarket shbSecuritiesMarket : shbSecuritiesMarkets) {
                     sum = sum.add(new BigDecimal(shbSecuritiesMarket.getClosingPrice()));
                 }
                 avg = sum.divide(new BigDecimal(shbSecuritiesMarkets.size()), 2, RoundingMode.HALF_EVEN).doubleValue();
                 break;
             case "sz_a":
-                List<SZASecuritiesMarket> szaSecuritiesMarkets = szaSecuritiesMarketMapper.queryList(securitiesId, start, end);
+                List<SZASecuritiesMarket> szaSecuritiesMarkets = szaSecuritiesMarketService.queryList(securitiesId, start, end);
                 for (SZASecuritiesMarket szaSecuritiesMarket : szaSecuritiesMarkets) {
                     sum = sum.add(new BigDecimal(szaSecuritiesMarket.getClosingPrice()));
                 }
                 avg = sum.divide(new BigDecimal(szaSecuritiesMarkets.size()), 2, RoundingMode.HALF_EVEN).doubleValue();
                 break;
             case "sz_b":
-                List<SZBSecuritiesMarket> szbSecuritiesMarkets = szbSecuritiesMarketMapper.queryList(securitiesId, start, end);
+                List<SZBSecuritiesMarket> szbSecuritiesMarkets = szbSecuritiesMarketService.queryList(securitiesId, start, end);
                 for (SZBSecuritiesMarket szbSecuritiesMarket : szbSecuritiesMarkets) {
                     sum = sum.add(new BigDecimal(szbSecuritiesMarket.getClosingPrice()));
                 }
@@ -593,111 +676,81 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
 
 
     /**
-     * 同步历史交易数据
+     * 同步历史交易数据（多线程数据）
      * @return
      * @throws Exception
      */
     @Override
     public ResultUtil synchronizeHistoricalData() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
-                    for(Securities s : securities){
-                        SecuritiesCategory securitiesCategory = securitiesCategoryService.selectById(s.getSecuritiesCategoryId());
-                        SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd");
-                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy");
-                        Date date = new Date();
-                        Integer year = Integer.valueOf(sdf.format(date));//年份
-                        Calendar calendar = Calendar.getInstance();
-                        calendar.setTime(date);
-                        while (true){
-                            int quarter = 0;
-                            if(year.intValue() == Integer.valueOf(sdf.format(date)).intValue()){
-                                quarter = DateUtil.createDate(date).QUARTER;//季节
-                            }else{
-                                quarter = 4;
-                            }
-                            boolean b = false;
+        List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
+        int num = (securities.size() / 50) + 1;//计算需要的线程数
+        for(int n = 0; n < num; n++){
+            int start = n * 50;
+            int end = (n + 1) * 50;//结束坐标
+            if(end > securities.size()){
+                end = securities.size();
+            }
+            List<Securities> securities1 = securities.subList(start, end);
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        for(Securities s : securities1){
+                            List<Object> list = new ArrayList<>();
+                            SecuritiesCategory securitiesCategory = securitiesCategoryService.selectById(s.getSecuritiesCategoryId());
+                            SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd");
+                            SimpleDateFormat sdf = new SimpleDateFormat("yyyy");
+                            Date marketTime = s.getMarketTime();//上市时间
+                            Integer year = Integer.valueOf(sdf.format(marketTime));//年份
                             while (true){
-                                String url = "http://quotes.money.163.com/trade/lsjysj_" + s.getCode() + ".html?year=" + year + "&season=" + quarter;
-                                HttpResult httpResult = httpClientUtil.pushHttpRequset("GET", url, null, null, "json");
-                                if(null == httpResult){
-                                    System.err.println("数据请求异常");
-                                    b = true;
-                                    break;
+                                int quarter = 0;//季节
+                                if(year.intValue() == Integer.valueOf(sdf.format(marketTime)).intValue()){
+                                    quarter = DateUtil.createDate(marketTime).QUARTER;
+                                }else{
+                                    quarter = 1;
                                 }
-                                if(httpResult.getCode() != 200){
-                                    System.err.println(httpResult.getData());
-                                    b = true;
-                                    break;
-                                }
-                                Document document = Jsoup.parse(httpResult.getData());
-                                Element element = document.getElementsByClass("table_bg001").get(0);
-                                Elements tr = element.getElementsByTag("tr");
-                                if(tr.size() == 1){//没有数据
-                                    b = true;
-                                    break;
-                                }
-                                //解析数据
-                                for(int i = 0; i < tr.size(); i++){
-                                    Elements td = tr.get(i).getElementsByTag("td");
-                                    if(td.size() == 0){
-                                        continue;
+                                boolean b = false;
+                                while (true){
+                                    String url = "http://quotes.money.163.com/trade/lsjysj_" + s.getCode() + ".html?year=" + year + "&season=" + quarter;
+                                    HttpResult httpResult = httpClientUtil.pushHttpRequset("GET", url, null, null, "json");
+                                    if(null == httpResult){
+                                        System.err.println("数据请求异常");
+                                        b = true;
+                                        break;
                                     }
-                                    String rq = td.get(0).text().equals("--") ? "0" : td.get(0).text();//日期
-                                    String kpj = td.get(1).text().equals("--") ? "0" : td.get(1).text();//开盘价
-                                    String zgj = td.get(2).text().equals("--") ? "0" : td.get(2).text();//最高价
-                                    String zdj = td.get(3).text().equals("--") ? "0" : td.get(3).text();//最低价
-                                    String spj = td.get(4).text().equals("--") ? "0" : td.get(4).text();//收盘价
-                                    String zde = td.get(5).text().equals("--") ? "0" : td.get(5).text();//涨跌额
-                                    String zdf = td.get(6).text().equals("--") ? "0" : td.get(6).text();//涨跌幅(%)
-                                    String cjl = td.get(7).text().equals("--") ? "0" : td.get(7).text().replaceAll(",", "");//成交量(手)
-                                    String cjje = td.get(8).text().equals("--") ? "0" : td.get(8).text().replaceAll(",", "");//成交金额(万元)
-                                    String zf = td.get(9).text().equals("--") ? "0" : td.get(9).text();//振幅(%)
-                                    String hsl = td.get(10).text().equals("--") ? "0" : td.get(10).text();//换手率(%)
-                                    String sqspj = new BigDecimal(spj).subtract(new BigDecimal(zde)).setScale(2, RoundingMode.HALF_EVEN).toString();//上期收盘价
+                                    if(httpResult.getCode() != 200){
+                                        System.err.println(httpResult.getData());
+                                        b = true;
+                                        break;
+                                    }
+                                    Document document = Jsoup.parse(httpResult.getData());
+                                    Element element = document.getElementsByClass("table_bg001").get(0);
+                                    Elements tr = element.getElementsByTag("tr");
+                                    if(tr.size() == 1){//没有数据
+                                        b = true;
+                                        break;
+                                    }
+                                    //解析数据
+                                    for(int i = 0; i < tr.size(); i++){
+                                        Elements td = tr.get(i).getElementsByTag("td");
+                                        if(td.size() == 0){
+                                            continue;
+                                        }
+                                        String rq = td.get(0).text();//日期
+                                        String kpj = !NumberUtils.isCreatable(td.get(1).text()) ? "0" : td.get(1).text();//开盘价
+                                        String zgj = !NumberUtils.isCreatable(td.get(2).text()) ? "0" : td.get(2).text();//最高价
+                                        String zdj = !NumberUtils.isCreatable(td.get(3).text()) ? "0" : td.get(3).text();//最低价
+                                        String spj = !NumberUtils.isCreatable(td.get(4).text()) ? "0" : td.get(4).text();//收盘价
+                                        String zde = !NumberUtils.isCreatable(td.get(5).text()) ? "0" : td.get(5).text();//涨跌额
+                                        String zdf = !NumberUtils.isCreatable(td.get(6).text()) ? "0" : td.get(6).text();//涨跌幅(%)
+                                        String cjl = !NumberUtils.isCreatable(td.get(7).text()) ? "0" : td.get(7).text().replaceAll(",", "");//成交量(手)
+                                        String cjje = !NumberUtils.isCreatable(td.get(8).text()) ? "0" : td.get(8).text().replaceAll(",", "");//成交金额(万元)
+                                        String zf = !NumberUtils.isCreatable(td.get(9).text()) ? "0" : td.get(9).text();//振幅(%)
+                                        String hsl = !NumberUtils.isCreatable(td.get(10).text()) ? "0" : td.get(10).text();//换手率(%)
+                                        String sqspj = new BigDecimal(spj).subtract(new BigDecimal(zde)).setScale(2, RoundingMode.HALF_EVEN).toString();//上期收盘价
 
-                                    if(securitiesCategory.getCode().equals("sh_a")){
-                                        SHASecuritiesMarket shaSecuritiesMarket = shaSecuritiesMarketMapper.queryBySecuritiesIdAndDate(s.getId(), sdf1.parse(rq));
-                                        if(null != shaSecuritiesMarket){
-                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getLastClosingPrice())){
-                                                shaSecuritiesMarket.setLastClosingPrice(sqspj);
-                                            }
-                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getClosingPrice())){
-                                                shaSecuritiesMarket.setClosingPrice(spj);
-                                            }
-                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getRiseFallPrice())){
-                                                shaSecuritiesMarket.setRiseFallPrice(zde);
-                                            }
-                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getRiseFallRatio())){
-                                                shaSecuritiesMarket.setRiseFallRatio(zdf);
-                                            }
-                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getOpeningPrice())){
-                                                shaSecuritiesMarket.setOpeningPrice(kpj);
-                                            }
-                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getTopPrice())){
-                                                shaSecuritiesMarket.setTopPrice(zgj);
-                                            }
-                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getLowestPrice())){
-                                                shaSecuritiesMarket.setLowestPrice(zdj);
-                                            }
-                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getAmplitude())){
-                                                shaSecuritiesMarket.setAmplitude(zf);
-                                            }
-                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getVolume())){
-                                                shaSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
-                                            }
-                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getDealAmount())){
-                                                shaSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
-                                            }
-                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getTurnoverRate())){
-                                                shaSecuritiesMarket.setTurnoverRate(hsl);
-                                            }
-                                            shaSecuritiesMarketMapper.update(shaSecuritiesMarket);
-                                        }else{
-                                            shaSecuritiesMarket = new SHASecuritiesMarket();
+                                        if(securitiesCategory.getCode().equals("sh_a")){
+                                            SHASecuritiesMarket shaSecuritiesMarket = new SHASecuritiesMarket();
                                             shaSecuritiesMarket.setSecuritiesId(s.getId());
                                             shaSecuritiesMarket.setTradeDate(sdf1.parse(rq));
                                             shaSecuritiesMarket.setLastClosingPrice(sqspj);
@@ -711,48 +764,65 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                                             shaSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
                                             shaSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
                                             shaSecuritiesMarket.setTurnoverRate(hsl);
-                                            shaSecuritiesMarketMapper.insert(shaSecuritiesMarket);
+                                            list.add(shaSecuritiesMarket);
+//                                            synchronizeHistoricalMarket(s.getSystemCode(), shaSecuritiesMarket, shaSecuritiesMarket.getTradeDate());
+
+//                                        SHASecuritiesMarket shaSecuritiesMarket = shaSecuritiesMarketMapper.queryBySecuritiesIdAndDate(s.getId(), sdf1.parse(rq));
+//                                        if(null != shaSecuritiesMarket){
+//                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getLastClosingPrice())){
+//                                                shaSecuritiesMarket.setLastClosingPrice(sqspj);
+//                                            }
+//                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getClosingPrice())){
+//                                                shaSecuritiesMarket.setClosingPrice(spj);
+//                                            }
+//                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getRiseFallPrice())){
+//                                                shaSecuritiesMarket.setRiseFallPrice(zde);
+//                                            }
+//                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getRiseFallRatio())){
+//                                                shaSecuritiesMarket.setRiseFallRatio(zdf);
+//                                            }
+//                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getOpeningPrice())){
+//                                                shaSecuritiesMarket.setOpeningPrice(kpj);
+//                                            }
+//                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getTopPrice())){
+//                                                shaSecuritiesMarket.setTopPrice(zgj);
+//                                            }
+//                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getLowestPrice())){
+//                                                shaSecuritiesMarket.setLowestPrice(zdj);
+//                                            }
+//                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getAmplitude())){
+//                                                shaSecuritiesMarket.setAmplitude(zf);
+//                                            }
+//                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getVolume())){
+//                                                shaSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
+//                                            }
+//                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getDealAmount())){
+//                                                shaSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
+//                                            }
+//                                            if(!StringUtils.hasLength(shaSecuritiesMarket.getTurnoverRate())){
+//                                                shaSecuritiesMarket.setTurnoverRate(hsl);
+//                                            }
+//                                            shaSecuritiesMarketMapper.update(shaSecuritiesMarket);
+//                                        }else{
+//                                            shaSecuritiesMarket = new SHASecuritiesMarket();
+//                                            shaSecuritiesMarket.setSecuritiesId(s.getId());
+//                                            shaSecuritiesMarket.setTradeDate(sdf1.parse(rq));
+//                                            shaSecuritiesMarket.setLastClosingPrice(sqspj);
+//                                            shaSecuritiesMarket.setClosingPrice(spj);
+//                                            shaSecuritiesMarket.setRiseFallPrice(zde);
+//                                            shaSecuritiesMarket.setRiseFallRatio(zdf);
+//                                            shaSecuritiesMarket.setOpeningPrice(kpj);
+//                                            shaSecuritiesMarket.setTopPrice(zgj);
+//                                            shaSecuritiesMarket.setLowestPrice(zdj);
+//                                            shaSecuritiesMarket.setAmplitude(zf);
+//                                            shaSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
+//                                            shaSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
+//                                            shaSecuritiesMarket.setTurnoverRate(hsl);
+//                                            shaSecuritiesMarketMapper.insert(shaSecuritiesMarket);
+//                                        }
                                         }
-                                    }
-                                    if(securitiesCategory.getCode().equals("sh_b")){
-                                        SHBSecuritiesMarket shbSecuritiesMarket = shbSecuritiesMarketMapper.queryBySecuritiesIdAndDate(s.getId(), sdf1.parse(rq));
-                                        if(null != shbSecuritiesMarket){
-                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getLastClosingPrice())){
-                                                shbSecuritiesMarket.setLastClosingPrice(sqspj);
-                                            }
-                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getClosingPrice())){
-                                                shbSecuritiesMarket.setClosingPrice(spj);
-                                            }
-                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getRiseFallPrice())){
-                                                shbSecuritiesMarket.setRiseFallPrice(zde);
-                                            }
-                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getRiseFallRatio())){
-                                                shbSecuritiesMarket.setRiseFallRatio(zdf);
-                                            }
-                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getOpeningPrice())){
-                                                shbSecuritiesMarket.setOpeningPrice(kpj);
-                                            }
-                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getTopPrice())){
-                                                shbSecuritiesMarket.setTopPrice(zgj);
-                                            }
-                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getLowestPrice())){
-                                                shbSecuritiesMarket.setLowestPrice(zdj);
-                                            }
-                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getAmplitude())){
-                                                shbSecuritiesMarket.setAmplitude(zf);
-                                            }
-                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getVolume())){
-                                                shbSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
-                                            }
-                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getDealAmount())){
-                                                shbSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
-                                            }
-                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getTurnoverRate())){
-                                                shbSecuritiesMarket.setTurnoverRate(hsl);
-                                            }
-                                            shbSecuritiesMarketMapper.update(shbSecuritiesMarket);
-                                        }else{
-                                            shbSecuritiesMarket = new SHBSecuritiesMarket();
+                                        if(securitiesCategory.getCode().equals("sh_b")){
+                                            SHBSecuritiesMarket shbSecuritiesMarket = new SHBSecuritiesMarket();
                                             shbSecuritiesMarket.setSecuritiesId(s.getId());
                                             shbSecuritiesMarket.setTradeDate(sdf1.parse(rq));
                                             shbSecuritiesMarket.setLastClosingPrice(sqspj);
@@ -766,48 +836,65 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                                             shbSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
                                             shbSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
                                             shbSecuritiesMarket.setTurnoverRate(hsl);
-                                            shbSecuritiesMarketMapper.insert(shbSecuritiesMarket);
+                                            list.add(shbSecuritiesMarket);
+//                                            synchronizeHistoricalMarket(s.getSystemCode(), shbSecuritiesMarket, shbSecuritiesMarket.getTradeDate());
+
+//                                        SHBSecuritiesMarket shbSecuritiesMarket = shbSecuritiesMarketMapper.queryBySecuritiesIdAndDate(s.getId(), sdf1.parse(rq));
+//                                        if(null != shbSecuritiesMarket){
+//                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getLastClosingPrice())){
+//                                                shbSecuritiesMarket.setLastClosingPrice(sqspj);
+//                                            }
+//                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getClosingPrice())){
+//                                                shbSecuritiesMarket.setClosingPrice(spj);
+//                                            }
+//                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getRiseFallPrice())){
+//                                                shbSecuritiesMarket.setRiseFallPrice(zde);
+//                                            }
+//                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getRiseFallRatio())){
+//                                                shbSecuritiesMarket.setRiseFallRatio(zdf);
+//                                            }
+//                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getOpeningPrice())){
+//                                                shbSecuritiesMarket.setOpeningPrice(kpj);
+//                                            }
+//                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getTopPrice())){
+//                                                shbSecuritiesMarket.setTopPrice(zgj);
+//                                            }
+//                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getLowestPrice())){
+//                                                shbSecuritiesMarket.setLowestPrice(zdj);
+//                                            }
+//                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getAmplitude())){
+//                                                shbSecuritiesMarket.setAmplitude(zf);
+//                                            }
+//                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getVolume())){
+//                                                shbSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
+//                                            }
+//                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getDealAmount())){
+//                                                shbSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
+//                                            }
+//                                            if(!StringUtils.hasLength(shbSecuritiesMarket.getTurnoverRate())){
+//                                                shbSecuritiesMarket.setTurnoverRate(hsl);
+//                                            }
+//                                            shbSecuritiesMarketMapper.update(shbSecuritiesMarket);
+//                                        }else{
+//                                            shbSecuritiesMarket = new SHBSecuritiesMarket();
+//                                            shbSecuritiesMarket.setSecuritiesId(s.getId());
+//                                            shbSecuritiesMarket.setTradeDate(sdf1.parse(rq));
+//                                            shbSecuritiesMarket.setLastClosingPrice(sqspj);
+//                                            shbSecuritiesMarket.setClosingPrice(spj);
+//                                            shbSecuritiesMarket.setRiseFallPrice(zde);
+//                                            shbSecuritiesMarket.setRiseFallRatio(zdf);
+//                                            shbSecuritiesMarket.setOpeningPrice(kpj);
+//                                            shbSecuritiesMarket.setTopPrice(zgj);
+//                                            shbSecuritiesMarket.setLowestPrice(zdj);
+//                                            shbSecuritiesMarket.setAmplitude(zf);
+//                                            shbSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
+//                                            shbSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
+//                                            shbSecuritiesMarket.setTurnoverRate(hsl);
+//                                            shbSecuritiesMarketMapper.insert(shbSecuritiesMarket);
+//                                        }
                                         }
-                                    }
-                                    if(securitiesCategory.getCode().equals("sz_a")){
-                                        SZASecuritiesMarket szaSecuritiesMarket = szaSecuritiesMarketMapper.queryBySecuritiesIdAndDate(s.getId(), sdf1.parse(rq));
-                                        if(null != szaSecuritiesMarket){
-                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getLastClosingPrice())){
-                                                szaSecuritiesMarket.setLastClosingPrice(sqspj);
-                                            }
-                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getClosingPrice())){
-                                                szaSecuritiesMarket.setClosingPrice(spj);
-                                            }
-                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getRiseFallPrice())){
-                                                szaSecuritiesMarket.setRiseFallPrice(zde);
-                                            }
-                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getRiseFallRatio())){
-                                                szaSecuritiesMarket.setRiseFallRatio(zdf);
-                                            }
-                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getOpeningPrice())){
-                                                szaSecuritiesMarket.setOpeningPrice(kpj);
-                                            }
-                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getTopPrice())){
-                                                szaSecuritiesMarket.setTopPrice(zgj);
-                                            }
-                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getLowestPrice())){
-                                                szaSecuritiesMarket.setLowestPrice(zdj);
-                                            }
-                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getAmplitude())){
-                                                szaSecuritiesMarket.setAmplitude(zf);
-                                            }
-                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getVolume())){
-                                                szaSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
-                                            }
-                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getDealAmount())){
-                                                szaSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
-                                            }
-                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getTurnoverRate())){
-                                                szaSecuritiesMarket.setTurnoverRate(hsl);
-                                            }
-                                            szaSecuritiesMarketMapper.update(szaSecuritiesMarket);
-                                        }else{
-                                            szaSecuritiesMarket = new SZASecuritiesMarket();
+                                        if(securitiesCategory.getCode().equals("sz_a")){
+                                            SZASecuritiesMarket szaSecuritiesMarket = new SZASecuritiesMarket();
                                             szaSecuritiesMarket.setSecuritiesId(s.getId());
                                             szaSecuritiesMarket.setTradeDate(sdf1.parse(rq));
                                             szaSecuritiesMarket.setLastClosingPrice(sqspj);
@@ -821,48 +908,64 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                                             szaSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
                                             szaSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
                                             szaSecuritiesMarket.setTurnoverRate(hsl);
-                                            szaSecuritiesMarketMapper.insert(szaSecuritiesMarket);
+                                            list.add(szaSecuritiesMarket);
+//                                            synchronizeHistoricalMarket(s.getSystemCode(), szaSecuritiesMarket, szaSecuritiesMarket.getTradeDate());
+//                                        SZASecuritiesMarket szaSecuritiesMarket = szaSecuritiesMarketMapper.queryBySecuritiesIdAndDate(s.getId(), sdf1.parse(rq));
+//                                        if(null != szaSecuritiesMarket){
+//                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getLastClosingPrice())){
+//                                                szaSecuritiesMarket.setLastClosingPrice(sqspj);
+//                                            }
+//                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getClosingPrice())){
+//                                                szaSecuritiesMarket.setClosingPrice(spj);
+//                                            }
+//                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getRiseFallPrice())){
+//                                                szaSecuritiesMarket.setRiseFallPrice(zde);
+//                                            }
+//                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getRiseFallRatio())){
+//                                                szaSecuritiesMarket.setRiseFallRatio(zdf);
+//                                            }
+//                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getOpeningPrice())){
+//                                                szaSecuritiesMarket.setOpeningPrice(kpj);
+//                                            }
+//                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getTopPrice())){
+//                                                szaSecuritiesMarket.setTopPrice(zgj);
+//                                            }
+//                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getLowestPrice())){
+//                                                szaSecuritiesMarket.setLowestPrice(zdj);
+//                                            }
+//                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getAmplitude())){
+//                                                szaSecuritiesMarket.setAmplitude(zf);
+//                                            }
+//                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getVolume())){
+//                                                szaSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
+//                                            }
+//                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getDealAmount())){
+//                                                szaSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
+//                                            }
+//                                            if(!StringUtils.hasLength(szaSecuritiesMarket.getTurnoverRate())){
+//                                                szaSecuritiesMarket.setTurnoverRate(hsl);
+//                                            }
+//                                            szaSecuritiesMarketMapper.update(szaSecuritiesMarket);
+//                                        }else{
+//                                            szaSecuritiesMarket = new SZASecuritiesMarket();
+//                                            szaSecuritiesMarket.setSecuritiesId(s.getId());
+//                                            szaSecuritiesMarket.setTradeDate(sdf1.parse(rq));
+//                                            szaSecuritiesMarket.setLastClosingPrice(sqspj);
+//                                            szaSecuritiesMarket.setClosingPrice(spj);
+//                                            szaSecuritiesMarket.setRiseFallPrice(zde);
+//                                            szaSecuritiesMarket.setRiseFallRatio(zdf);
+//                                            szaSecuritiesMarket.setOpeningPrice(kpj);
+//                                            szaSecuritiesMarket.setTopPrice(zgj);
+//                                            szaSecuritiesMarket.setLowestPrice(zdj);
+//                                            szaSecuritiesMarket.setAmplitude(zf);
+//                                            szaSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
+//                                            szaSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
+//                                            szaSecuritiesMarket.setTurnoverRate(hsl);
+//                                            szaSecuritiesMarketMapper.insert(szaSecuritiesMarket);
+//                                        }
                                         }
-                                    }
-                                    if(securitiesCategory.getCode().equals("sz_b")){
-                                        SZBSecuritiesMarket szbSecuritiesMarket = szbSecuritiesMarketMapper.queryBySecuritiesIdAndDate(s.getId(), sdf1.parse(rq));
-                                        if(null != szbSecuritiesMarket){
-                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getLastClosingPrice())){
-                                                szbSecuritiesMarket.setLastClosingPrice(sqspj);
-                                            }
-                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getClosingPrice())){
-                                                szbSecuritiesMarket.setClosingPrice(spj);
-                                            }
-                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getRiseFallPrice())){
-                                                szbSecuritiesMarket.setRiseFallPrice(zde);
-                                            }
-                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getRiseFallRatio())){
-                                                szbSecuritiesMarket.setRiseFallRatio(zdf);
-                                            }
-                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getOpeningPrice())){
-                                                szbSecuritiesMarket.setOpeningPrice(kpj);
-                                            }
-                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getTopPrice())){
-                                                szbSecuritiesMarket.setTopPrice(zgj);
-                                            }
-                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getLowestPrice())){
-                                                szbSecuritiesMarket.setLowestPrice(zdj);
-                                            }
-                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getAmplitude())){
-                                                szbSecuritiesMarket.setAmplitude(zf);
-                                            }
-                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getVolume())){
-                                                szbSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
-                                            }
-                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getDealAmount())){
-                                                szbSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
-                                            }
-                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getTurnoverRate())){
-                                                szbSecuritiesMarket.setTurnoverRate(hsl);
-                                            }
-                                            szbSecuritiesMarketMapper.update(szbSecuritiesMarket);
-                                        }else{
-                                            szbSecuritiesMarket = new SZBSecuritiesMarket();
+                                        if(securitiesCategory.getCode().equals("sz_b")){
+                                            SZBSecuritiesMarket szbSecuritiesMarket = new SZBSecuritiesMarket();
                                             szbSecuritiesMarket.setSecuritiesId(s.getId());
                                             szbSecuritiesMarket.setTradeDate(sdf1.parse(rq));
                                             szbSecuritiesMarket.setLastClosingPrice(sqspj);
@@ -876,28 +979,85 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                                             szbSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
                                             szbSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
                                             szbSecuritiesMarket.setTurnoverRate(hsl);
-                                            szbSecuritiesMarketMapper.insert(szbSecuritiesMarket);
+                                            list.add(szbSecuritiesMarket);
+//                                            synchronizeHistoricalMarket(s.getSystemCode(), szbSecuritiesMarket, szbSecuritiesMarket.getTradeDate());
+
+//                                        SZBSecuritiesMarket szbSecuritiesMarket = szbSecuritiesMarketMapper.queryBySecuritiesIdAndDate(s.getId(), sdf1.parse(rq));
+//                                        if(null != szbSecuritiesMarket){
+//                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getLastClosingPrice())){
+//                                                szbSecuritiesMarket.setLastClosingPrice(sqspj);
+//                                            }
+//                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getClosingPrice())){
+//                                                szbSecuritiesMarket.setClosingPrice(spj);
+//                                            }
+//                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getRiseFallPrice())){
+//                                                szbSecuritiesMarket.setRiseFallPrice(zde);
+//                                            }
+//                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getRiseFallRatio())){
+//                                                szbSecuritiesMarket.setRiseFallRatio(zdf);
+//                                            }
+//                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getOpeningPrice())){
+//                                                szbSecuritiesMarket.setOpeningPrice(kpj);
+//                                            }
+//                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getTopPrice())){
+//                                                szbSecuritiesMarket.setTopPrice(zgj);
+//                                            }
+//                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getLowestPrice())){
+//                                                szbSecuritiesMarket.setLowestPrice(zdj);
+//                                            }
+//                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getAmplitude())){
+//                                                szbSecuritiesMarket.setAmplitude(zf);
+//                                            }
+//                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getVolume())){
+//                                                szbSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
+//                                            }
+//                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getDealAmount())){
+//                                                szbSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
+//                                            }
+//                                            if(!StringUtils.hasLength(szbSecuritiesMarket.getTurnoverRate())){
+//                                                szbSecuritiesMarket.setTurnoverRate(hsl);
+//                                            }
+//                                            szbSecuritiesMarketMapper.update(szbSecuritiesMarket);
+//                                        }else{
+//                                            szbSecuritiesMarket = new SZBSecuritiesMarket();
+//                                            szbSecuritiesMarket.setSecuritiesId(s.getId());
+//                                            szbSecuritiesMarket.setTradeDate(sdf1.parse(rq));
+//                                            szbSecuritiesMarket.setLastClosingPrice(sqspj);
+//                                            szbSecuritiesMarket.setClosingPrice(spj);
+//                                            szbSecuritiesMarket.setRiseFallPrice(zde);
+//                                            szbSecuritiesMarket.setRiseFallRatio(zdf);
+//                                            szbSecuritiesMarket.setOpeningPrice(kpj);
+//                                            szbSecuritiesMarket.setTopPrice(zgj);
+//                                            szbSecuritiesMarket.setLowestPrice(zdj);
+//                                            szbSecuritiesMarket.setAmplitude(zf);
+//                                            szbSecuritiesMarket.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
+//                                            szbSecuritiesMarket.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
+//                                            szbSecuritiesMarket.setTurnoverRate(hsl);
+//                                            szbSecuritiesMarketMapper.insert(szbSecuritiesMarket);
+//                                        }
                                         }
                                     }
+                                    quarter++;
+                                    if(quarter == 5){
+                                        break;
+                                    }
                                 }
-                                quarter--;
-                                if(quarter == 0){
+                                if(b){//没有数据可采集。
                                     break;
                                 }
+                                year++;
                             }
-                            if(b){//没有数据可采集。
-                                break;
-                            }
-                            year--;
-                        }
-                        Thread.sleep(600000);//阻塞10分钟，释放http资源
-                    }
 
-                }catch (Exception e){
-                    e.printStackTrace();
+                            //处理完数据化保存到文件中
+                            CacheUtil.markets.put(s.getSystemCode(), JSON.toJSONString(list));
+                            fileUtil.write(s.getSystemCode() + ".json", JSON.toJSONString(list), false);//写入
+                        }
+                    }catch (Exception e){
+                        e.printStackTrace();
+                    }
                 }
-            }
-        }).start();
+            }).start();
+        }
         return ResultUtil.success();
     }
 
@@ -937,7 +1097,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             String startTime = "";
             switch (securitiesCategory.getCode()){
                 case "sh_a":
-                    List<SHASecuritiesMarket> shaSecuritiesMarkets = shaSecuritiesMarketMapper.queryList(s.getId(), start, end);
+                    List<SHASecuritiesMarket> shaSecuritiesMarkets = shaSecuritiesMarketService.queryList(s.getId(), start, end);
                     BigDecimal sh_a_v = new BigDecimal(0);
                     for(SHASecuritiesMarket sha : shaSecuritiesMarkets){
                         d.add(sdf.format(sha.getTradeDate()));
@@ -950,7 +1110,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                     }
                     break;
                 case "sh_b":
-                    List<SHBSecuritiesMarket> shbSecuritiesMarkets = shbSecuritiesMarketMapper.queryList(s.getId(), start, end);
+                    List<SHBSecuritiesMarket> shbSecuritiesMarkets = shbSecuritiesMarketService.queryList(s.getId(), start, end);
                     BigDecimal sh_b_v = new BigDecimal(0);
                     for(SHBSecuritiesMarket shb : shbSecuritiesMarkets){
                         d.add(sdf.format(shb.getTradeDate()));
@@ -963,7 +1123,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                     }
                     break;
                 case "sz_a":
-                    List<SZASecuritiesMarket> szaSecuritiesMarkets = szaSecuritiesMarketMapper.queryList(s.getId(), start, end);
+                    List<SZASecuritiesMarket> szaSecuritiesMarkets = szaSecuritiesMarketService.queryList(s.getId(), start, end);
                     BigDecimal sz_a_v = new BigDecimal(0);
                     for(SZASecuritiesMarket sza : szaSecuritiesMarkets){
                         d.add(sdf.format(sza.getTradeDate()));
@@ -977,7 +1137,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                     }
                     break;
                 case "sz_b":
-                    List<SZBSecuritiesMarket> szbSecuritiesMarkets = szbSecuritiesMarketMapper.queryList(s.getId(), start, end);
+                    List<SZBSecuritiesMarket> szbSecuritiesMarkets = szbSecuritiesMarketService.queryList(s.getId(), start, end);
                     BigDecimal sz_b_v = new BigDecimal(0);
                     for(SZBSecuritiesMarket szb : szbSecuritiesMarkets){
                         d.add(sdf.format(szb.getTradeDate()));
@@ -998,5 +1158,151 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             break;// TODO: 2021/5/19 先查询一条数据
         }
         return list;
+    }
+
+
+    /**
+     * 保存新数据到缓存中
+     * @param fileName
+     * @param o
+     * @param tradeDate
+     */
+    public void saveMarketToFile(String fileName, Object o, Date tradeDate){
+        try {
+            String value = CacheUtil.markets.get(fileName);
+            JSONObject jsonObject1 = JSON.parseObject(value);
+            if(null != jsonObject1){
+                JSONArray market = jsonObject1.getJSONArray("market");
+                if(null == market){
+                    market = new JSONArray();
+                }
+                boolean b = true;
+                for(int j = 0; j < market.size(); j++){//判断数据是否需要插入
+                    Long tradeDate1 = market.getJSONObject(j).getLong("tradeDate");
+                    if(tradeDate.getTime() == tradeDate1){
+                        b = false;
+                        break;
+                    }
+                }
+                if(b){//需要插入新数据到数据集合中
+                    market.add(o);
+                }
+                jsonObject1.put("market", market);
+            }else{
+                jsonObject1 = new JSONObject();
+                jsonObject1.put("market", JSON.toJSONString(Arrays.asList(o)));
+            }
+            CacheUtil.markets.put(fileName, jsonObject1.toJSONString());//更新到缓存中
+            fileUtil.write(fileName + ".json", jsonObject1.toJSONString(), false);//更新到本地文件中
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+
+    /**
+     * 同步历史数据到缓存中
+     * @param fileName
+     * @param o
+     * @param tradeDate
+     */
+    public void synchronizeHistoricalMarket (String fileName, Object o, Date tradeDate){
+        try {
+            String value = CacheUtil.markets.get(fileName);
+            JSONObject jsonObject = JSON.parseObject(value);
+            if(null != jsonObject){
+                JSONArray market = jsonObject.getJSONArray("market");
+                if(null == market){
+                    market = new JSONArray();
+                }
+                int b = 0;
+                int i = 0;
+                for(int j = 0; j < market.size(); j++){//判断数据处理方式（0=插入新数据，1=更新历史数据，2=不处理）
+                    Long tradeDate1 = market.getJSONObject(j).getLong("tradeDate");
+                    String turnoverRate = market.getJSONObject(j).getString("turnoverRate");
+                    if(!StringUtils.hasLength(turnoverRate) && tradeDate.getTime() == tradeDate1){//更新
+                        i = j;
+                        b = 1;
+                        break;
+                    }
+                    if(StringUtils.hasLength(turnoverRate) && tradeDate.getTime() == tradeDate1){//不处理
+                        b = 2;
+                        break;
+                    }
+                }
+                if(b == 0){//新增
+                    market.add(o);
+                }
+                if(b == 1){//更新
+                    market.remove(i);
+                    market.add(o);
+                }
+                if(b == 2){//不处理
+                    return;
+                }
+            }else{
+                jsonObject = new JSONObject();
+                jsonObject.put("market", Arrays.asList(o));
+            }
+            CacheUtil.markets.put(fileName, sort(jsonObject, o.getClass()));
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 对数据进行排序
+     * @param jsonObject
+     * @param clazz
+     * @return
+     */
+    public String sort(JSONObject jsonObject, Class clazz){
+        //处理按照时间排序
+        if(clazz == SHASecuritiesMarket.class){
+            String market = jsonObject.getString("market");
+            List<SHASecuritiesMarket> list = JSON.parseArray(market, SHASecuritiesMarket.class);
+            Collections.sort(list);
+            jsonObject.put("market", list);
+        }
+        if(clazz == SHBSecuritiesMarket.class){
+            String market = jsonObject.getString("market");
+            List<SHBSecuritiesMarket> list = JSON.parseArray(market, SHBSecuritiesMarket.class);
+            Collections.sort(list);
+            jsonObject.put("market", list);
+        }
+        if(clazz == SZASecuritiesMarket.class){
+            String market = jsonObject.getString("market");
+            List<SZASecuritiesMarket> list = JSON.parseArray(market, SZASecuritiesMarket.class);
+            Collections.sort(list);
+            jsonObject.put("market", list);
+        }
+        if(clazz == SZBSecuritiesMarket.class){
+            String market = jsonObject.getString("market");
+            List<SZBSecuritiesMarket> list = JSON.parseArray(market, SZBSecuritiesMarket.class);
+            Collections.sort(list);
+            jsonObject.put("market", list);
+        }
+        return jsonObject.toJSONString();
+    }
+
+
+    /**
+     * 初始化数据到缓存中
+     * @return
+     * @throws Exception
+     */
+    @Override
+    public void initMarketToCache() throws Exception {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
+                for(Securities s : securities){
+                    String read = fileUtil.read(s.getSystemCode() + ".json");//读取本地文件中的数据
+                    CacheUtil.markets.put(s.getSystemCode(), read);
+                }
+                System.out.println("【已完成初始化数据到缓存中！】");
+            }
+        }).start();
     }
 }

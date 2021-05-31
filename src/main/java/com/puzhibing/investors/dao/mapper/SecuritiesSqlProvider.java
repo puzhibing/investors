@@ -5,7 +5,7 @@ import org.apache.ibatis.jdbc.SQL;
 
 public class SecuritiesSqlProvider {
 
-    private final String COLUMNS = "systemCode, code, securitiesCategoryId, name, marketTime, marketAddress";
+    private final String COLUMNS = "systemCode, code, securitiesCategoryId, name, marketTime, marketAddress, flowEquity";
 
     private final String TABLE = "db_securities";
 
@@ -18,7 +18,7 @@ public class SecuritiesSqlProvider {
         return new SQL(){{
             INSERT_INTO(TABLE)
                     .INTO_COLUMNS(COLUMNS)
-                    .INTO_VALUES("#{systemCode}, #{code}, #{securitiesCategoryId}, #{name}, #{marketTime}, #{marketAddress}");
+                    .INTO_VALUES("#{systemCode}, #{code}, #{securitiesCategoryId}, #{name}, #{marketTime}, #{marketAddress}, #{flowEquity}");
         }}.toString();
     }
 
@@ -90,6 +90,19 @@ public class SecuritiesSqlProvider {
         return new SQL(){{
             SELECT("id, " + COLUMNS)
                     .FROM(TABLE)
+                    .WHERE("id = #{id}");
+        }}.toString();
+    }
+
+    /**
+     * 修改数据
+     * @return
+     */
+    public String updateById(){
+        return new SQL(){{
+            UPDATE(TABLE)
+                    .SET("systemCode = #{systemCode}", "code = #{code}", "securitiesCategoryId = #{securitiesCategoryId}", "name = #{name}")
+                    .SET("marketTime = #{marketTime}", "marketAddress = #{marketAddress}", "flowEquity = #{flowEquity}")
                     .WHERE("id = #{id}");
         }}.toString();
     }

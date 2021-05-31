@@ -1,6 +1,7 @@
 package com.puzhibing.investors.util.http;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -15,6 +16,7 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.springframework.stereotype.Component;
 
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -31,12 +33,6 @@ public class HttpClientUtil {
 
     private CloseableHttpClient httpClient;
 
-    private CloseableHttpResponse httpResponse;
-
-    private HttpGet httpGet;
-
-    private HttpPost httpPost;
-
     private RequestConfig requestConfig;
 
 
@@ -47,7 +43,7 @@ public class HttpClientUtil {
         //1.创建连接池管理器
         PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager(60000,
                 TimeUnit.MILLISECONDS);
-        connectionManager.setMaxTotal(10000);
+        connectionManager.setMaxTotal(1000);
         connectionManager.setDefaultMaxPerRoute(100);
 
         //2.创建httpclient对象
@@ -71,9 +67,10 @@ public class HttpClientUtil {
      * @param url       请求地址
      * @param params    请求参数
      */
-    private void setPostHttpRequset(String url, Map<String, Object> params, Map<String, String> header, String contentType){
-        httpPost = new HttpPost(url);
+    private CloseableHttpResponse setPostHttpRequset(String url, Map<String, Object> params, Map<String, String> header, String contentType){
+        HttpPost httpPost = new HttpPost(url);
         httpPost.setConfig(this.getRequestConfig());
+        CloseableHttpResponse httpResponse = null;
         if(null != header){
             for(String key : header.keySet()){
                 httpPost.setHeader(key, header.get(key));
@@ -105,8 +102,8 @@ public class HttpClientUtil {
             httpResponse = this.httpClient.execute(httpPost);
         } catch (IOException e) {
             e.printStackTrace();
-            this.close();
         }
+        return httpResponse;
     }
 
 
@@ -115,7 +112,7 @@ public class HttpClientUtil {
      * @param url       请求地址
      * @param params    请求参数
      */
-    private void setGetHttpRequset(String url, Map<String, Object> params, Map<String, String> header){
+    private CloseableHttpResponse setGetHttpRequset(String url, Map<String, Object> params, Map<String, String> header){
         StringBuffer sb = new StringBuffer();
         String p = "";
         if(null != params){
@@ -125,7 +122,8 @@ public class HttpClientUtil {
             }
             p = "?" + sb.substring(0, sb.length() - 1);
         }
-        httpGet = new HttpGet(url + p);
+        HttpGet httpGet = new HttpGet(url + p);
+        CloseableHttpResponse httpResponse = null;
         if(null != header){
             for(String key : header.keySet()){
                 httpGet.setHeader(key, header.get(key));
@@ -139,8 +137,8 @@ public class HttpClientUtil {
             httpResponse = this.httpClient.execute(httpGet);
         } catch (IOException e) {
             e.printStackTrace();
-            this.close();
         }
+        return httpResponse;
     }
 
 
@@ -154,12 +152,13 @@ public class HttpClientUtil {
      * @return
      */
     public HttpResult pushHttpRequset(String mothed, String url, Map<String, Object> params, Map<String, String> header, String contentType){
+        CloseableHttpResponse httpResponse = null;
         switch (mothed){
             case "GET":
-                this.setGetHttpRequset(url, params, header);
+                httpResponse = this.setGetHttpRequset(url, params, header);
                 break;
             case "POST":
-                this.setPostHttpRequset(url, params, header, contentType);
+                httpResponse = this.setPostHttpRequset(url, params, header, contentType);
                 break;
         }
         HttpResult httpResult = null;
@@ -168,12 +167,17 @@ public class HttpClientUtil {
             String content = EntityUtils.toString(httpResponse.getEntity(), "UTF-8");
             System.err.println(statusCode);
             httpResult = HttpResult.getHttpResult(statusCode, content);
-            this.close();
         } catch (IOException e) {
             e.printStackTrace();
-            this.close();
+        }finally {
+            try {
+                if(null != httpResponse){
+                    httpResponse.close();
+                }
+            }catch (Exception e){
+                e.printStackTrace();
+            }
         }
-        this.close();
         return httpResult;
     }
 
@@ -187,6 +191,7 @@ public class HttpClientUtil {
      */
     public HttpResult pushHttpRequsetXml(String url, String xml, Map<String, String> header){
         HttpPost httpPost = new HttpPost(url);
+        CloseableHttpResponse httpResponse = null;
         for(String key : header.keySet()){
             httpPost.setHeader(key, header.get(key));
         }
@@ -203,50 +208,23 @@ public class HttpClientUtil {
                 int statusCode = httpResponse.getStatusLine().getStatusCode();
                 String content = EntityUtils.toString(httpResponse.getEntity(), "UTF-8");
                 httpResult = HttpResult.getHttpResult(statusCode, content);
-                this.close();
             } catch (IOException e) {
                 e.printStackTrace();
-                this.close();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            this.close();
-        }
-        return httpResult;
-    }
-
-
-
-    /**
-     * 关闭资源
-     */
-    private void close(){
-        try {
-            if(null != httpResponse){
-                httpResponse.close();
-            }
-            if(null != httpPost){
-                httpPost.releaseConnection();
-            }
-            if(null != httpGet){
-                httpGet.releaseConnection();
             }
         } catch (IOException e) {
             e.printStackTrace();
         }finally {
             try {
-                if(null != httpResponse){
-                    httpResponse.close();
-                }
                 if(null != httpPost){
                     httpPost.releaseConnection();
                 }
-                if(null != httpGet){
-                    httpGet.releaseConnection();
+                if(null != httpResponse){
+                    httpResponse.close();
                 }
             }catch (Exception e){
                 e.printStackTrace();
             }
         }
+        return httpResult;
     }
 }
