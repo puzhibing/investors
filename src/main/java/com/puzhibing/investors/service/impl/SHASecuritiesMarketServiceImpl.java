@@ -10,6 +10,8 @@ import com.puzhibing.investors.pojo.SHASecuritiesMarket;
 import com.puzhibing.investors.pojo.Securities;
 import com.puzhibing.investors.service.ISHASecuritiesMarketService;
 import com.puzhibing.investors.util.CacheUtil;
+import com.puzhibing.investors.util.redis.RedisUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -22,6 +24,9 @@ public class SHASecuritiesMarketServiceImpl implements ISHASecuritiesMarketServi
 
     @Resource
     private SecuritiesMapper securitiesMapper;
+
+    @Autowired
+    private RedisUtil redisUtil;
 
 
     /**
@@ -36,7 +41,7 @@ public class SHASecuritiesMarketServiceImpl implements ISHASecuritiesMarketServi
     public List<SHASecuritiesMarket> queryList(Integer securitiesId, Date start, Date end) throws Exception {
         List<SHASecuritiesMarket> list = new ArrayList<>();
         Securities securities = securitiesMapper.selectById(securitiesId);
-        String value = CacheUtil.markets.get(securities.getSystemCode());
+        String value = redisUtil.getValue(securities.getSystemCode());
         JSONObject jsonObject = JSON.parseObject(value);
         if(null == jsonObject){
             return list;

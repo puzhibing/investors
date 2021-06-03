@@ -8,6 +8,8 @@ import com.puzhibing.investors.pojo.SZASecuritiesMarket;
 import com.puzhibing.investors.pojo.Securities;
 import com.puzhibing.investors.service.ISZASecuritiesMarketService;
 import com.puzhibing.investors.util.CacheUtil;
+import com.puzhibing.investors.util.redis.RedisUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -22,6 +24,9 @@ public class SZASecuritiesMarketServiceImpl implements ISZASecuritiesMarketServi
     @Resource
     private SecuritiesMapper securitiesMapper;
 
+    @Autowired
+    private RedisUtil redisUtil;
+
 
     /**
      * 获取指定日期范围内的数据
@@ -35,7 +40,8 @@ public class SZASecuritiesMarketServiceImpl implements ISZASecuritiesMarketServi
     public List<SZASecuritiesMarket> queryList(Integer securitiesId, Date start, Date end) throws Exception {
         List<SZASecuritiesMarket> list = new ArrayList<>();
         Securities securities = securitiesMapper.selectById(securitiesId);
-        String value = CacheUtil.markets.get(securities.getSystemCode());
+//        String value = CacheUtil.markets.get(securities.getSystemCode());
+        String value = redisUtil.getValue(securities.getSystemCode());
         JSONObject jsonObject = JSON.parseObject(value);
         if(null == jsonObject){
             return list;

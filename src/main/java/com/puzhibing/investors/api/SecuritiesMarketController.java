@@ -22,7 +22,7 @@ public class SecuritiesMarketController {
      * @return
      */
     @ResponseBody
-    @PostMapping("/synchronizeHistoricalData")
+    @GetMapping("/synchronizeHistoricalData")
     public ResultUtil synchronizeHistoricalData(){
         try {
             return securitiesMarketService.synchronizeHistoricalData();

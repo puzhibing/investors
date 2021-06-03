@@ -18,6 +18,7 @@ import javax.annotation.Resource;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 
 @Service
@@ -42,6 +43,7 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
      */
     @Override
     public void pullSecurities() throws Exception {
+        System.err.println("更新证券基础数据任务开始。");
         /**
          * 获取并添加【上海证券交易所A股】证券数据
          */
@@ -77,7 +79,7 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
                 securitiesMapper.insert(securities);
             }
             //更新股本数据
-             String urlSHA_ = "http://query.sse.com.cn/commonQuery.do?isPagination=false&sqlId=COMMON_SSE_CP_GPLB_GPGK_GBJG_C&companyCode=" + companyCode;
+            String urlSHA_ = "http://query.sse.com.cn/commonQuery.do?isPagination=false&sqlId=COMMON_SSE_CP_GPLB_GPGK_GBJG_C&companyCode=" + companyCode;
             header = new HashMap<>();
             header.put("Referer", "http://www.sse.com.cn/");
             httpResult = httpClientUtil.pushHttpRequset("GET", urlSHA_, null, header, null);
@@ -92,6 +94,7 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
             Long flowEquity = Double.valueOf(jsonObject1.getDouble("UNLIMITED_A_SHARES") * 10000).longValue();
             securities.setFlowEquity(flowEquity);
             securitiesMapper.updateById(securities);
+            Thread.sleep(new Random().nextInt(20));//暂停20内随机秒，防止因频繁调用被限制IP
         }
 
 
@@ -149,6 +152,7 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
             Long flowEquity = Double.valueOf(jsonObject1.getDouble("B_SHARES") * 10000).longValue();
             securities.setFlowEquity(flowEquity);
             securitiesMapper.updateById(securities);
+            Thread.sleep(new Random().nextInt(20));//暂停20内随机秒，防止因频繁调用被限制IP
         }
 
         /**
@@ -197,8 +201,8 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
                     System.err.println(httpResult.getData());
                 }
                 JSONObject data = JSON.parseObject(httpResult.getData()).getJSONObject("data");
-                String agltgb = data.getString("agltgb");
-                Long flowEquity = Double.valueOf(data.getDouble(agltgb) * 10000).longValue();
+                String agltgb = data.getString("agltgb").replaceAll(",", "");
+                Long flowEquity = Double.valueOf(Double.valueOf(agltgb) * 10000).longValue();
                 securities.setFlowEquity(flowEquity);
                 securitiesMapper.updateById(securities);
             }
@@ -206,6 +210,7 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
                 break;
             }
             l++;
+            Thread.sleep(new Random().nextInt(20));//暂停20内随机秒，防止因频繁调用被限制IP
         }
 
         /**
@@ -254,8 +259,8 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
                     System.err.println(httpResult.getData());
                 }
                 JSONObject data = JSON.parseObject(httpResult.getData()).getJSONObject("data");
-                String agltgb = data.getString("agltgb").replaceAll(",", "");
-                Long flowEquity = Double.valueOf(data.getDouble(agltgb) * 10000).longValue();
+                String bgltgb = data.getString("bgltgb").replaceAll(",", "");
+                Long flowEquity = Double.valueOf(Double.valueOf(bgltgb) * 10000).longValue();
                 securities.setFlowEquity(flowEquity);
                 securitiesMapper.updateById(securities);
             }
@@ -263,7 +268,9 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
                 break;
             }
             l++;
+            Thread.sleep(new Random().nextInt(20));//暂停20内随机秒，防止因频繁调用被限制IP
         }
+        System.err.println("更新证券基础数据任务结束。");
     }
 
 }

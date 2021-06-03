@@ -53,4 +53,10 @@ public interface ISecuritiesMarketService {
      * @throws Exception
      */
     void initMarketToCache() throws Exception;
+
+
+    /**
+     * 检查历史行情数据
+     */
+    void checkHistoricalMarketData();
 }

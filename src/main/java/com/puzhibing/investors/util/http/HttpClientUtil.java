@@ -165,7 +165,6 @@ public class HttpClientUtil {
         try {
             int statusCode = httpResponse.getStatusLine().getStatusCode();
             String content = EntityUtils.toString(httpResponse.getEntity(), "UTF-8");
-            System.err.println(statusCode);
             httpResult = HttpResult.getHttpResult(statusCode, content);
         } catch (IOException e) {
             e.printStackTrace();

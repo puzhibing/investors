@@ -77,4 +77,12 @@ public class FileUtil {
         }
         return sb.toString();
     }
+
+
+    public void remove(String fileName){
+        File file = new File(FILE_PATH + fileName);
+        if(file.exists()){
+            file.delete();
+        }
+    }
 }
