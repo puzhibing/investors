@@ -1073,7 +1073,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy");
         Date marketTime = s.getMarketTime();//上市时间
         int year = Integer.valueOf(sdf.format(marketTime)).intValue();//年份
-        DateUtil date = DateUtil.createDate(marketTime);
+        DateUtil date = DateUtil.createDate(new Date());
         while (true) {
             int quarter = 0;//季节
             if (year == Integer.valueOf(sdf.format(marketTime)).intValue()) {
@@ -1094,11 +1094,11 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                 Document document = Jsoup.parse(httpResult.getData());
                 Element element = document.getElementsByClass("table_bg001").get(0);
                 Elements tr = element.getElementsByTag("tr");
-                if (tr.size() == 1 && year == date.YEAR && quarter == date.QUARTER) {//查询完毕
+                if (tr.size() == 1 && year >= date.YEAR && quarter >= date.QUARTER) {//查询完毕
                     b = true;
                     break;
                 }
-                if (tr.size() == 1 && year != date.YEAR && quarter != date.QUARTER) {//数据缺失
+                if (tr.size() == 1 && year <= date.YEAR && quarter <= date.QUARTER) {//数据缺失
                     break;
                 }
                 //解析数据
