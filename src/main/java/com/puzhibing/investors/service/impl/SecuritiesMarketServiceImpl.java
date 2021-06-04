@@ -413,16 +413,21 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             List<Double> months = new ArrayList<>();//30天移动平均值
             List<Double> years = new ArrayList<>();//365天移动平均值
             List<Double> civilYear = new ArrayList<>();//自然年的平均值
+            List<Double> zf = new ArrayList<>();//振幅
+            List<Double> zdl = new ArrayList<>();//涨跌率
             int year = 0;//年份
             Double yearAvg = 0D;
             String startTime = "";
             switch (securitiesCategory.getCode()){
                 case "sh_a":
-                    List<SHASecuritiesMarket> shaSecuritiesMarkets = shaSecuritiesMarketService.queryList(s.getId(), start, end);;
+                    List<SHASecuritiesMarket> shaSecuritiesMarkets = shaSecuritiesMarketService.queryList(s.getId(), start, end);
                     for(SHASecuritiesMarket sha : shaSecuritiesMarkets){
                         d.add(sdf.format(sha.getTradeDate()));
                         day.add(Double.valueOf(sha.getClosingPrice()));//收盘价
                         h.add(null == sha.getTurnoverRate() ? 0 : Double.valueOf(sha.getTurnoverRate()));//换手率
+//                        zf.add(null == sha.getAmplitude() ? 0 : Double.valueOf(sha.getAmplitude()));//振幅
+//                        zdl.add(null == sha.getRiseFallRatio() ? 0 : Double.valueOf(sha.getRiseFallRatio()));//涨跌率
+
                         int y1 = Integer.valueOf(sdf1.format(sha.getTradeDate())).intValue();
                         if(!StringUtils.hasLength(startTime) && y == y1){
                             startTime = sdf.format(sha.getTradeDate());
@@ -441,7 +446,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                             yearAvg = getYearAvgClosingPrice(securitiesCategory.getCode(), s.getId(), sha.getTradeDate());
                             year = ye;
                         }
-                        civilYear.add(yearAvg);
+//                        civilYear.add(yearAvg);
 
                     }
                     break;
@@ -536,6 +541,8 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             map.put("yearAvgClosingPrice", years);
             map.put("civilYearAvgClosingPrice", civilYear);
             map.put("startTime", startTime);
+            map.put("zf", zf);
+            map.put("zdl", zdl);
             list.add(map);
             break;// TODO: 2021/5/19 先查询一条数据
         }
@@ -746,10 +753,24 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                 case "sh_a":
                     List<SHASecuritiesMarket> shaSecuritiesMarkets = shaSecuritiesMarketService.queryList(s.getId(), start, end);
                     BigDecimal sh_a_v = new BigDecimal(0);
-                    for(SHASecuritiesMarket sha : shaSecuritiesMarkets){
+                    for(int i = 0; i < shaSecuritiesMarkets.size(); i++){
+                        SHASecuritiesMarket sha = shaSecuritiesMarkets.get(i);
+                        if(i == 0){
+                            riseFallPrice.add(100D);
+                        }else{
+                            SHASecuritiesMarket shaSecuritiesMarket = shaSecuritiesMarkets.get(i - 1);
+                            if(Long.valueOf(shaSecuritiesMarket.getVolume()) == 0){
+                                riseFallPrice.add(0D);
+                            }else{
+                                riseFallPrice.add(new BigDecimal(Long.valueOf(sha.getVolume()) / Long.valueOf(shaSecuritiesMarket.getVolume())).setScale(2, RoundingMode.HALF_EVEN).doubleValue());
+                            }
+
+                        }
+
+
                         d.add(sdf.format(sha.getTradeDate()));
-                        sh_a_v = sh_a_v.add(new BigDecimal(sha.getRiseFallPrice()));
-                        riseFallPrice.add(sh_a_v.setScale(2, RoundingMode.HALF_EVEN).doubleValue());
+//                        sh_a_v = sh_a_v.add(new BigDecimal(sha.getRiseFallPrice()));
+//                        riseFallPrice.add(sh_a_v.setScale(2, RoundingMode.HALF_EVEN).doubleValue());
                         int y1 = Integer.valueOf(sdf1.format(sha.getTradeDate())).intValue();
                         if(!StringUtils.hasLength(startTime) && y == y1){
                             startTime = sdf.format(sha.getTradeDate());
@@ -1051,10 +1072,11 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
         SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd");
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy");
         Date marketTime = s.getMarketTime();//上市时间
-        Integer year = Integer.valueOf(sdf.format(marketTime));//年份
+        int year = Integer.valueOf(sdf.format(marketTime)).intValue();//年份
+        DateUtil date = DateUtil.createDate(marketTime);
         while (true) {
             int quarter = 0;//季节
-            if (year.intValue() == Integer.valueOf(sdf.format(marketTime)).intValue()) {
+            if (year == Integer.valueOf(sdf.format(marketTime)).intValue()) {
                 quarter = DateUtil.createDate(marketTime).QUARTER;
             } else {
                 quarter = 1;
@@ -1072,8 +1094,11 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                 Document document = Jsoup.parse(httpResult.getData());
                 Element element = document.getElementsByClass("table_bg001").get(0);
                 Elements tr = element.getElementsByTag("tr");
-                if (tr.size() == 1) {//没有数据
+                if (tr.size() == 1 && year == date.YEAR && quarter == date.QUARTER) {//查询完毕
                     b = true;
+                    break;
+                }
+                if (tr.size() == 1 && year != date.YEAR && quarter != date.QUARTER) {//数据缺失
                     break;
                 }
                 //解析数据
@@ -1089,8 +1114,8 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                     String spj = !NumberUtils.isCreatable(td.get(4).text()) ? "0" : td.get(4).text();//收盘价
                     String zde = !NumberUtils.isCreatable(td.get(5).text()) ? "0" : td.get(5).text();//涨跌额
                     String zdf = !NumberUtils.isCreatable(td.get(6).text()) ? "0" : td.get(6).text();//涨跌幅(%)
-                    String cjl = !NumberUtils.isCreatable(td.get(7).text()) ? "0" : td.get(7).text().replaceAll(",", "");//成交量(手)
-                    String cjje = !NumberUtils.isCreatable(td.get(8).text()) ? "0" : td.get(8).text().replaceAll(",", "");//成交金额(万元)
+                    String cjl = td.get(7).text().indexOf("-") != -1 ? "0" : td.get(7).text().replaceAll(",", "");//成交量(手)
+                    String cjje = td.get(8).text().indexOf("-") != -1 ? "0" : td.get(8).text().replaceAll(",", "");//成交金额(万元)
                     String zf = !NumberUtils.isCreatable(td.get(9).text()) ? "0" : td.get(9).text();//振幅(%)
                     String hsl = !NumberUtils.isCreatable(td.get(10).text()) ? "0" : td.get(10).text();//换手率(%)
                     String sqspj = new BigDecimal(spj).subtract(new BigDecimal(zde)).setScale(2, RoundingMode.HALF_EVEN).toString();//上期收盘价

@@ -10,23 +10,23 @@ import java.util.Date;
  */
 public class DateUtil {
 
-    public Integer YEAR;//年
+    public int YEAR;//年
 
-    public Integer QUARTER;//季度
+    public int QUARTER;//季度
 
-    public Integer MONTH;//月
+    public int MONTH;//月
 
-    public Integer WEEK;//周
+    public int WEEK;//周
 
-    public Integer WEEK_OF_MONTH;//月中的几周
+    public int WEEK_OF_MONTH;//月中的几周
 
-    public Integer DAY;//天
+    public int DAY;//天
 
-    public Integer HOUR;//小时
+    public int HOUR;//小时
 
-    public Integer MINUTE;//分钟
+    public int MINUTE;//分钟
 
-    public Integer SECOND;//秒
+    public int SECOND;//秒
 
 
     /**
