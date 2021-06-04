@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -43,7 +44,8 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
      */
     @Override
     public void pullSecurities() throws Exception {
-        System.err.println("更新证券基础数据任务开始。");
+        SimpleDateFormat sdf_ = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        System.err.println(sdf_.format(new Date()) + "------更新证券基础数据任务开始。");
         /**
          * 获取并添加【上海证券交易所A股】证券数据
          */
@@ -94,7 +96,7 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
             Long flowEquity = Double.valueOf(jsonObject1.getDouble("UNLIMITED_A_SHARES") * 10000).longValue();
             securities.setFlowEquity(flowEquity);
             securitiesMapper.updateById(securities);
-            Thread.sleep(new Random().nextInt(20));//暂停20内随机秒，防止因频繁调用被限制IP
+            Thread.sleep(new Random().nextInt(10) * 1000);//暂停10内随机秒，防止因频繁调用被限制IP
         }
 
 
@@ -152,7 +154,7 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
             Long flowEquity = Double.valueOf(jsonObject1.getDouble("B_SHARES") * 10000).longValue();
             securities.setFlowEquity(flowEquity);
             securitiesMapper.updateById(securities);
-            Thread.sleep(new Random().nextInt(20));//暂停20内随机秒，防止因频繁调用被限制IP
+            Thread.sleep(new Random().nextInt(10) * 1000);//暂停10内随机秒，防止因频繁调用被限制IP
         }
 
         /**
@@ -210,7 +212,7 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
                 break;
             }
             l++;
-            Thread.sleep(new Random().nextInt(20));//暂停20内随机秒，防止因频繁调用被限制IP
+            Thread.sleep(new Random().nextInt(10) * 1000);//暂停10内随机秒，防止因频繁调用被限制IP
         }
 
         /**
@@ -268,9 +270,9 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
                 break;
             }
             l++;
-            Thread.sleep(new Random().nextInt(20));//暂停20内随机秒，防止因频繁调用被限制IP
+            Thread.sleep(new Random().nextInt(10) * 1000);//暂停10内随机秒，防止因频繁调用被限制IP
         }
-        System.err.println("更新证券基础数据任务结束。");
+        System.err.println(sdf_.format(new Date()) + "更新证券基础数据任务结束。");
     }
 
 }

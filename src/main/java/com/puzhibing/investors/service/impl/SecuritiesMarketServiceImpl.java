@@ -70,7 +70,8 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
      */
     @Override
     public void pullSecuritiesMarket() throws Exception {
-        System.err.println("更新日行情数据任务开始。");
+        SimpleDateFormat sdf_ = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        System.err.println(sdf_.format(new Date()) + "------更新日行情数据任务开始。");
         /**
          * 获取【上海证券交易所A股日行情】数据
          */
@@ -335,21 +336,15 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
 
             Thread.sleep(new Random().nextInt(10) * 1000);//暂停10内随机秒，防止因频繁调用被限制IP
         }
-        System.err.println("更新日行情数据任务结束。");
+        System.err.println(sdf_.format(new Date()) + "------更新日行情数据任务结束。");
 
-//        new Thread(new Runnable() {
-//            @Override
-//            public void run() {
-//                try {
-//                    SecuritiesMarketServiceImpl.this.movingAverage(5);
-//                    SecuritiesMarketServiceImpl.this.movingAverage(15);
-//                    SecuritiesMarketServiceImpl.this.movingAverage(30);
-//                    SecuritiesMarketServiceImpl.this.movingAverage(90);
-//                }catch (Exception e){
-//                    e.printStackTrace();
-//                }
-//            }
-//        }).start();
+        System.err.println(sdf_.format(new Date()) + "------计算移动平均数据任务开始。");
+        SecuritiesMarketServiceImpl.this.movingAverage(5);
+        SecuritiesMarketServiceImpl.this.movingAverage(15);
+        SecuritiesMarketServiceImpl.this.movingAverage(30);
+        SecuritiesMarketServiceImpl.this.movingAverage(90);
+        SecuritiesMarketServiceImpl.this.movingAverage(365);
+        System.err.println(sdf_.format(new Date()) + "------计算移动平均数据任务结束。");
     }
 
 
@@ -661,7 +656,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
      * @throws Exception
      */
     @Override
-    public ResultUtil synchronizeHistoricalData() {
+    public ResultUtil synchronizeHistoricalData(Integer base) {
         List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
         String securitiesId = redisUtil.getValue("securitiesId");
         Set<Integer> integers = new HashSet<>(JSON.parseArray(securitiesId, Integer.class));
@@ -671,9 +666,9 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                 list.add(securities1);
             }
         }
-        int base = 1000;//数据分隔基数
         int num = (list.size() / base) + 1;//计算需要的线程数
-        System.err.println("同步历史数据：线程总数--------------" + num);
+        SimpleDateFormat sdf_ = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        System.err.println(sdf_.format(new Date()) + "------同步历史数据：线程总数--------------" + num);
         for(int n = 0; n < num; n++){
             int start = n * base;
             int end = (n + 1) * base;//结束坐标
@@ -701,11 +696,12 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                             }
                             ids.add(s.getId());
                             redisUtil.setStrValue("securitiesId", JSON.toJSONString(ids));
+                            Thread.sleep(new Random().nextInt(120) * 1000);//暂停120内随机秒，防止因频繁调用被限制IP
                         }
                     }catch (Exception e){
                         e.printStackTrace();
                     }
-                    System.err.println("同步历史数据：线程 " + (finalN + 1) + " 任务结束。");
+                    System.err.println(sdf_.format(new Date()) + "------同步历史数据：线程 " + (finalN + 1) + " 任务结束。");
                 }
             }).start();
         }
@@ -947,7 +943,8 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
         List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
         int base = 500;//数据分隔基数
         int num = (securities.size() / base) + 1;//计算需要的线程数
-        System.err.println("初始化数据到缓存：线程总数--------------" + num);
+        SimpleDateFormat sdf_ = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        System.err.println(sdf_.format(new Date()) + "------初始化数据到缓存：线程总数--------------" + num);
         for(int n = 0; n < num; n++) {
             int start = n * base;
             int end = (n + 1) * base;//结束坐标
@@ -965,7 +962,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                             redisUtil.setStrValue(s.getSystemCode(), read);
                         }
                     }
-                    System.err.println("初始化数据到缓存：线程 " + (finalN + 1) + " 任务结束。");
+                    System.err.println(sdf_.format(new Date()) + "------初始化数据到缓存：线程 " + (finalN + 1) + " 任务结束。");
                 }
             }).start();
         }
@@ -986,7 +983,8 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
      */
     @Override
     public void checkHistoricalMarketData() {
-        System.err.println("检查历史数据任务------------------开始。");
+        SimpleDateFormat sdf_ = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        System.err.println(sdf_.format(new Date()) + "------检查历史数据任务开始。");
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -1020,12 +1018,13 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                                 fileUtil.write(s.getSystemCode() + ".json", jsonObject.toJSONString(), false);//写入
                             }
                         }
+                        Thread.sleep(new Random().nextInt(120) * 1000);//暂停120内随机秒，防止因频繁调用被限制IP
                     }
                     SecuritiesMarketServiceImpl.this.checkHistoricalMarketData();//处理完成后重新调用自己继续新一轮的检查处理
                 }catch (Exception e){
                     e.printStackTrace();
                 }
-                System.err.println("检查历史数据任务------------------结束。");
+                System.err.println(sdf_.format(new Date()) + "------检查历史数据任务结束。");
             }
         }).start();
     }
@@ -1109,7 +1108,6 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                 if(quarter == 5){
                     break;
                 }
-                Thread.sleep(new Random().nextInt(10) * 1000);//暂停10内随机秒，防止因频繁调用被限制IP
             }
             if(b){//没有数据可采集。
                 break;

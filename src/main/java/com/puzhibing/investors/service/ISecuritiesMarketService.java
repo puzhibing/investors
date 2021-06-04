@@ -31,7 +31,7 @@ public interface ISecuritiesMarketService {
      * @return
      * @throws Exception
      */
-    ResultUtil synchronizeHistoricalData();
+    ResultUtil synchronizeHistoricalData(Integer base);
 
 
     /**

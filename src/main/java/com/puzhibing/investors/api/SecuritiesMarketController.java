@@ -23,9 +23,9 @@ public class SecuritiesMarketController {
      */
     @ResponseBody
     @GetMapping("/synchronizeHistoricalData")
-    public ResultUtil synchronizeHistoricalData(){
+    public ResultUtil synchronizeHistoricalData(Integer base){
         try {
-            return securitiesMarketService.synchronizeHistoricalData();
+            return securitiesMarketService.synchronizeHistoricalData(base);
         }catch (Exception e){
             e.printStackTrace();
             return ResultUtil.runErr();

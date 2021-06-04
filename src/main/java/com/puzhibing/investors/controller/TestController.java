@@ -18,7 +18,7 @@ public class TestController {
     @Autowired
     private ISecuritiesMarketService securitiesMarketService;
 
-    @GetMapping("/quertTestPage")
+    @GetMapping("")
     public Object quertTestPage(){
         return "test.html";
     }
