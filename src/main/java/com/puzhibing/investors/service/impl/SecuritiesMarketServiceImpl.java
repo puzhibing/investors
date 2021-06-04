@@ -427,14 +427,14 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         if(!StringUtils.hasLength(startTime) && y == y1){
                             startTime = sdf.format(sha.getTradeDate());
                         }
-                        Double week = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), sha.getTradeDate(), 5);
-                        weeks.add(week);
-
-                        Double month = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), sha.getTradeDate(), 30);
-                        months.add(month);
-
-                        Double yy = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), sha.getTradeDate(), 365);
-                        years.add(yy);
+//                        Double week = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), sha.getTradeDate(), 5);
+//                        weeks.add(week);
+//
+//                        Double month = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), sha.getTradeDate(), 30);
+//                        months.add(month);
+//
+//                        Double yy = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), sha.getTradeDate(), 365);
+//                        years.add(yy);
 
                         int ye = Integer.valueOf(sdf1.format(sha.getTradeDate())).intValue();
                         if(year != ye){
@@ -455,14 +455,14 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         if(!StringUtils.hasLength(startTime) && y == y1){
                             startTime = sdf.format(shb.getTradeDate());
                         }
-                        Double week = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), shb.getTradeDate(), 5);
-                        weeks.add(week);
-
-                        Double month = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), shb.getTradeDate(), 30);
-                        months.add(month);
-
-                        Double yy = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), shb.getTradeDate(), 365);
-                        years.add(yy);
+//                        Double week = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), shb.getTradeDate(), 5);
+//                        weeks.add(week);
+//
+//                        Double month = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), shb.getTradeDate(), 30);
+//                        months.add(month);
+//
+//                        Double yy = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), shb.getTradeDate(), 365);
+//                        years.add(yy);
 
                         int ye = Integer.valueOf(sdf1.format(shb.getTradeDate())).intValue();
                         if(year != ye){
@@ -482,14 +482,14 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         if(!StringUtils.hasLength(startTime) && y == y1){
                             startTime = sdf.format(sza.getTradeDate());
                         }
-                        Double week = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), sza.getTradeDate(), 5);
-                        weeks.add(week);
-
-                        Double month = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), sza.getTradeDate(), 30);
-                        months.add(month);
-
-                        Double yy = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), sza.getTradeDate(), 365);
-                        years.add(yy);
+//                        Double week = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), sza.getTradeDate(), 5);
+//                        weeks.add(week);
+//
+//                        Double month = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), sza.getTradeDate(), 30);
+//                        months.add(month);
+//
+//                        Double yy = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), sza.getTradeDate(), 365);
+//                        years.add(yy);
 
                         int ye = Integer.valueOf(sdf1.format(sza.getTradeDate())).intValue();
                         if(year != ye){
@@ -509,14 +509,14 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         if(!StringUtils.hasLength(startTime) && y == y1){
                             startTime = sdf.format(szb.getTradeDate());
                         }
-                        Double week = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), szb.getTradeDate(), 5);
-                        weeks.add(week);
-
-                        Double month = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), szb.getTradeDate(), 30);
-                        months.add(month);
-
-                        Double yy = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), szb.getTradeDate(), 365);
-                        years.add(yy);
+//                        Double week = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), szb.getTradeDate(), 5);
+//                        weeks.add(week);
+//
+//                        Double month = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), szb.getTradeDate(), 30);
+//                        months.add(month);
+//
+//                        Double yy = getAvgClosingPrice(securitiesCategory.getCode(), s.getId(), szb.getTradeDate(), 365);
+//                        years.add(yy);
 
                         int ye = Integer.valueOf(sdf1.format(szb.getTradeDate())).intValue();
                         if(year != ye){
@@ -982,15 +982,18 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
      * 检查历史数据
      */
     @Override
-    public void checkHistoricalMarketData() {
+    public void checkHistoricalMarketData(int start) {
         SimpleDateFormat sdf_ = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         System.err.println(sdf_.format(new Date()) + "------检查历史数据任务开始。");
         new Thread(new Runnable() {
             @Override
             public void run() {
+                int index = 0;
                 try {
                     List<Securities> list = securitiesMapper.querySecuritiesList(null, null);
-                    for(Securities s : list){
+                    for(int i = start; i < list.size(); i++){
+                        index = i;
+                        Securities s = list.get(i);
                         List<SecuritiesMarketVo> securitiesMarketVos = SecuritiesMarketServiceImpl.this.queryHistoricalMatket(s);
                         String read = fileUtil.read(s.getSystemCode() + ".json");
                         JSONObject jsonObject = JSON.parseObject(read);
@@ -999,11 +1002,11 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                             boolean b = false;
                             for(SecuritiesMarketVo sm : securitiesMarketVos){
                                 boolean n = true;
-                                for(int i = 0; i < jsonArray.size(); i++){
-                                    Long tradeDate = jsonArray.getJSONObject(i).getLong("tradeDate");
+                                for(int j = 0; j < jsonArray.size(); j++){
+                                    Long tradeDate = jsonArray.getJSONObject(j).getLong("tradeDate");
                                     if(tradeDate == sm.getTradeDate().getTime()){
                                         n = false;
-                                        jsonArray.remove(i);//减少对比的数据量
+                                        jsonArray.remove(j);//减少对比的数据量
                                         break;
                                     }
                                 }
@@ -1020,9 +1023,16 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         }
                         Thread.sleep(new Random().nextInt(120) * 1000);//暂停120内随机秒，防止因频繁调用被限制IP
                     }
-                    SecuritiesMarketServiceImpl.this.checkHistoricalMarketData();//处理完成后重新调用自己继续新一轮的检查处理
+                    SecuritiesMarketServiceImpl.this.checkHistoricalMarketData(0);//处理完成后重新调用自己继续新一轮的检查处理
                 }catch (Exception e){
                     e.printStackTrace();
+                    try {
+                        Thread.sleep(1000 * 60 * 30);//等待30分钟继续请求数据
+                        System.err.println(sdf_.format(new Date()) + "------检查历史数据任务继续执行开始。");
+                        checkHistoricalMarketData(index);
+                    }catch (Exception e1){
+                        e1.printStackTrace();
+                    }
                 }
                 System.err.println(sdf_.format(new Date()) + "------检查历史数据任务结束。");
             }
@@ -1054,14 +1064,10 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                 String url = "http://quotes.money.163.com/trade/lsjysj_" + s.getCode() + ".html?year=" + year + "&season=" + quarter;
                 HttpResult httpResult = httpClientUtil.pushHttpRequset("GET", url, null, null, "json");
                 if (null == httpResult) {
-                    System.err.println("数据请求异常");
-                    b = true;
-                    break;
+                    throw new Exception("数据请求异常");
                 }
                 if (httpResult.getCode() != 200) {
-                    System.err.println(httpResult.getData());
-                    b = true;
-                    break;
+                    throw new Exception(httpResult.getData());
                 }
                 Document document = Jsoup.parse(httpResult.getData());
                 Element element = document.getElementsByClass("table_bg001").get(0);

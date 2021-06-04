@@ -58,5 +58,5 @@ public interface ISecuritiesMarketService {
     /**
      * 检查历史行情数据
      */
-    void checkHistoricalMarketData();
+    void checkHistoricalMarketData(int index);
 }
