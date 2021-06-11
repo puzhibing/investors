@@ -1,5 +1,6 @@
 package com.puzhibing.investors.service;
 
+import com.puzhibing.investors.pojo.Securities;
 import com.puzhibing.investors.util.ResultUtil;
 
 import java.util.List;
@@ -12,7 +13,7 @@ public interface ISecuritiesMarketService {
      * 获取并添加证券日行情数据
      * @throws Exception
      */
-    void pullSecuritiesMarket() throws Exception;
+    void pullSecuritiesMarket() ;
 
 
     /**
@@ -58,5 +59,12 @@ public interface ISecuritiesMarketService {
     /**
      * 检查历史行情数据
      */
-    void checkHistoricalMarketData(int index);
+    void checkHistoricalMarketData(List<Securities> list);
+
+
+    /**
+     * 计算移动平均
+     * @throws Exception
+     */
+    void calculateMovingAverage(String securitiesCategoryCode) throws Exception;
 }

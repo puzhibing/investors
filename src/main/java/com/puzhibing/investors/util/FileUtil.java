@@ -19,21 +19,28 @@ public class FileUtil {
      * 写入内容到文件中
      * @param content   写入内容
      * @param fileName  文件名称
-     * @param append    是否追加写入
      */
-    public void write(String fileName, String content, Boolean append){
-        FileOutputStream fileOutputStream = null;
+    public void write(String fileName, String content){
+        BufferedWriter bufferedWriter = null;
+        FileWriter fileWriter = null;
         try {
             File file = new File(FILE_PATH + fileName);
             file.createNewFile();
-            fileOutputStream = new FileOutputStream(file, append);
-            fileOutputStream.write(content.getBytes(CHARSET));
+            fileWriter = new FileWriter(file);
+            bufferedWriter = new BufferedWriter(fileWriter);
+            bufferedWriter.write(content);
+            bufferedWriter.flush();
+            bufferedWriter.close();
+            fileWriter.close();
         } catch (IOException e) {
             e.printStackTrace();
         }finally {
             try {
-                if(null != fileOutputStream){
-                    fileOutputStream.close();
+                if(null != bufferedWriter){
+                    bufferedWriter.close();
+                }
+                if(null != fileWriter){
+                    fileWriter.close();
                 }
             }catch (Exception e){
                 e.printStackTrace();
@@ -79,10 +86,31 @@ public class FileUtil {
     }
 
 
+    /**
+     * 删除文件或文件夹
+     * @param fileName
+     */
     public void remove(String fileName){
         File file = new File(FILE_PATH + fileName);
         if(file.exists()){
             file.delete();
         }
+    }
+
+
+    /**
+     * 获取文件目录下文件的数量
+     * @return
+     */
+    public int findFileCount(){
+        File file = new File(FILE_PATH);
+        File[] files = file.listFiles();
+        int count = 0;
+        for(File f : files){
+            if(f.isFile()){
+                count++;
+            }
+        }
+        return count;
     }
 }

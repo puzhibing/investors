@@ -37,9 +37,9 @@ public class TaskUtil {
 
 
     /**
-     * 每天的9.30执行的任务
+     * 每天的8:30点执行的任务
      */
-    @Scheduled(cron = "0 30 09 * * *")
+    @Scheduled(cron = "0 30 08 * * *")
     public void taskDay9(){
         try {
             securitiesService.pullSecurities();
@@ -49,9 +49,9 @@ public class TaskUtil {
     }
 
     /**
-     * 每天的17点执行的任务
+     * 每天的16点执行的任务
      */
-    @Scheduled(cron = "0 0 17 * * *")
+    @Scheduled(cron = "0 0 16 * * *")
     public void taskDay17(){
         try {
             securitiesMarketService.pullSecuritiesMarket();

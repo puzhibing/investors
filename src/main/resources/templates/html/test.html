@@ -148,11 +148,14 @@
             var closingPrice = data[i].closingPrice;
             var turnoverRate = data[i].turnoverRate;
             var weekAvgClosingPrice = data[i].weekAvgClosingPrice;
+            var halfMonthAvgClosingPrice = data[i].halfMonthAvgClosingPrice;
             var monthAvgClosingPrice = data[i].monthAvgClosingPrice;
+            var quarterAvgClosingPrice = data[i].quarterAvgClosingPrice;
             var yearAvgClosingPrice = data[i].yearAvgClosingPrice;
-            var civilYearAvgClosingPrice = data[i].civilYearAvgClosingPrice;
             var zf = data[i].zf;
             var zdl = data[i].zdl;
+            var cs1 = data[i].cs1;
+            var cs2 = data[i].cs2;
             var name = data[i].name;
             var startTime = data[i].startTime;
             // 基于准备好的dom，初始化echarts实例
@@ -161,7 +164,7 @@
             // 指定图表的配置项和数据
             option = {
                 title: {
-                    text: name
+                    text: '测试'
                 },
                 tooltip: {
                     trigger: 'axis',
@@ -180,7 +183,8 @@
                     }
                 },
                 legend: {
-                    data: ['收盘价', '换手率', '周移动平均', '月移动平均', '年移动平均', '自然年平均']
+                    // data: ['收盘价', '换手率', '5日移动平均', '15日移动平均', '30日移动平均', '90日移动平均', '365日移动平均']
+                    data: ['基数', '平均', '最大']
                 },
                 grid: {
                     left: '3%',
@@ -210,14 +214,27 @@
                     data: latitude
                 },
                 yAxis: {
-                    type: 'value'
+                    type: 'value',
+                    min: function (value) {
+                        return Math.floor(value.min);
+                    },
+                    max: function (value) {
+                        return Math.ceil(value.max);
+                    },
                 },
                 series: [
                     {
-                        name: '收盘价',
+                        name: '基数',
                         data: closingPrice,
                         type: 'line',
                         showSymbol: false,
+                        itemStyle:{
+                            color: '#DB3462',
+                        },
+                        lineStyle: {
+                            color: '#DB3462',
+                            width: 1
+                        },
                         markPoint: {
                             data: [
                                 {type: 'max', name: '最大值'},
@@ -231,80 +248,124 @@
                         // }
                     },
                     {
-                        name: '换手率',
-                        data: turnoverRate,
+                        name: '平均',
+                        data: cs1,
                         type: 'line',
                         showSymbol: false,
+                        lineStyle: {
+                            width: 1
+                        },
                         // markPoint: {
                         //     data: [
                         //         {type: 'max', name: '最大值'},
                         //         {type: 'min', name: '最小值'}
                         //     ]
                         // },
-                        markLine: {
-                            data: [
-                                {type: 'average', name: '平均值'}
-                            ]
-                        }
+                        // markLine: {
+                        //     data: [
+                        //         {type: 'average', name: '平均值'}
+                        //     ]
+                        // }
                     },
                     {
-                        name: '振幅',
-                        data: zf,
+                        name: '最大',
+                        data: cs2,
                         type: 'line',
                         showSymbol: false,
+                        lineStyle: {
+                            width: 1
+                        },
                         // markPoint: {
                         //     data: [
                         //         {type: 'max', name: '最大值'},
                         //         {type: 'min', name: '最小值'}
                         //     ]
                         // },
-                        markLine: {
-                            data: [
-                                {type: 'average', name: '平均值'}
-                            ]
-                        }
-                    },
-                    {
-                        name: '涨跌率',
-                        data: zdl,
-                        type: 'line',
-                        showSymbol: false,
-                        // markPoint: {
+                        // markLine: {
                         //     data: [
-                        //         {type: 'max', name: '最大值'},
-                        //         {type: 'min', name: '最小值'}
+                        //         {type: 'average', name: '平均值'}
                         //     ]
-                        // },
-                        markLine: {
-                            data: [
-                                {type: 'average', name: '平均值'}
-                            ]
-                        }
+                        // }
                     },
-                    {
-                        name: '周移动平均',
-                        data: weekAvgClosingPrice,
-                        type: 'line',
-                        showSymbol: false,
-                    },
-                    {
-                        name: '月移动平均',
-                        data: monthAvgClosingPrice,
-                        type: 'line',
-                        showSymbol: false,
-                    },
-                    {
-                        name: '年移动平均',
-                        data: yearAvgClosingPrice,
-                        type: 'line',
-                        showSymbol: false,
-                    },
-                    {
-                        name: '自然年平均',
-                        data: civilYearAvgClosingPrice,
-                        type: 'line',
-                        showSymbol: false,
-                    }
+                //     {
+                //         name: '振幅',
+                //         data: zf,
+                //         type: 'line',
+                //         showSymbol: false,
+                //         // markPoint: {
+                //         //     data: [
+                //         //         {type: 'max', name: '最大值'},
+                //         //         {type: 'min', name: '最小值'}
+                //         //     ]
+                //         // },
+                //         markLine: {
+                //             data: [
+                //                 {type: 'average', name: '平均值'}
+                //             ]
+                //         }
+                //     },
+                //     {
+                //         name: '涨跌率',
+                //         data: zdl,
+                //         type: 'line',
+                //         showSymbol: false,
+                //         // markPoint: {
+                //         //     data: [
+                //         //         {type: 'max', name: '最大值'},
+                //         //         {type: 'min', name: '最小值'}
+                //         //     ]
+                //         // },
+                //         markLine: {
+                //             data: [
+                //                 {type: 'average', name: '平均值'}
+                //             ]
+                //         }
+                //     },
+                //     {
+                //         name: '5日移动平均',
+                //         data: weekAvgClosingPrice,
+                //         type: 'line',
+                //         lineStyle: {
+                //             width: 1
+                //         },
+                //         showSymbol: false,
+                //     },
+                //     {
+                //         name: '15日移动平均',
+                //         data: halfMonthAvgClosingPrice,
+                //         type: 'line',
+                //         lineStyle: {
+                //             width: 1
+                //         },
+                //         showSymbol: false,
+                //     },
+                //     {
+                //         name: '30日移动平均',
+                //         data: monthAvgClosingPrice,
+                //         type: 'line',
+                //         lineStyle: {
+                //             width: 1
+                //         },
+                //         showSymbol: false,
+                //     },
+                //     {
+                //         name: '90日移动平均',
+                //         data: quarterAvgClosingPrice,
+                //         type: 'line',
+                //         lineStyle: {
+                //             width: 1
+                //         },
+                //         showSymbol: false,
+                //     },
+                //     {
+                //         name: '365日移动平均',
+                //         data: yearAvgClosingPrice,
+                //         type: 'line',
+                //         lineStyle: {
+                //             width: 1
+                //         },
+                //         showSymbol: false,
+                //     }
                 ]
             };
             // 使用刚指定的配置项和数据显示图表。

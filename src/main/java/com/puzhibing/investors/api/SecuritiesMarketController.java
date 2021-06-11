@@ -31,4 +31,37 @@ public class SecuritiesMarketController {
             return ResultUtil.runErr();
         }
     }
+
+
+    /**
+     * 计算移动平均数据
+     * @return
+     */
+    @ResponseBody
+    @GetMapping("/calculateMovingAverage")
+    public ResultUtil calculateMovingAverage(){
+        try {
+            securitiesMarketService.calculateMovingAverage(null);
+            return ResultUtil.success();
+        }catch (Exception e){
+            e.printStackTrace();
+            return ResultUtil.runErr();
+        }
+    }
+
+    /**
+     * 获取当日行情数据
+     * @return
+     */
+    @ResponseBody
+    @GetMapping("/pullSecuritiesMarket")
+    public ResultUtil pullSecuritiesMarket(){
+        try {
+            securitiesMarketService.pullSecuritiesMarket();
+            return ResultUtil.success();
+        }catch (Exception e){
+            e.printStackTrace();
+            return ResultUtil.runErr();
+        }
+    }
 }

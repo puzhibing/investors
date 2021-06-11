@@ -9,7 +9,7 @@ import java.util.Date;
  * 证券日行情
  */
 @Data
-public class SecuritiesMarket {
+public class SecuritiesMarket implements Comparable {
     /**
      * 主键
      */
@@ -62,4 +62,26 @@ public class SecuritiesMarket {
      * 成交金额（元）
      */
     private String dealAmount;
+    /**
+     * 换手率（%）
+     */
+    private String turnoverRate;
+
+    @Override
+    public int compareTo(Object o) {
+        if (o instanceof SecuritiesMarket) {
+            SecuritiesMarket sm = (SecuritiesMarket) o;
+            if (this.tradeDate == null || sm.tradeDate == null) {
+                return -1;
+            }
+            if (this.tradeDate.getTime() < sm.getTradeDate().getTime()) {
+                return -1;
+            } else if (this.tradeDate.getTime() == sm.getTradeDate().getTime()) {
+                return 0;
+            } else {
+                return 1;
+            }
+        }
+        return 0;
+    }
 }
