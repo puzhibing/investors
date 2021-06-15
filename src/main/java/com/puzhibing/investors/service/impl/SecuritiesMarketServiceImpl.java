@@ -113,6 +113,9 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
 
 
                         Securities securities = securitiesMapper.queryByCodeAndSecuritiesCategory(code, sh_a.getId());
+                        if(null == securities){
+                            continue;
+                        }
                         SecuritiesMarket securitiesMarket = new SecuritiesMarket();
                         securitiesMarket.setSecuritiesId(securities.getId());
                         securitiesMarket.setTradeDate(sdf.parse(date));
@@ -192,6 +195,9 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         String zfl = jsonArray.getString(12);//振幅率（%）
 
                         Securities securities = securitiesMapper.queryByCodeAndSecuritiesCategory(code, sh_b.getId());
+                        if(null == securities){
+                            continue;
+                        }
                         SecuritiesMarket shbSecuritiesMarket = new SecuritiesMarket();
                         shbSecuritiesMarket.setSecuritiesId(securities.getId());
                         shbSecuritiesMarket.setTradeDate(sdf.parse(date));
