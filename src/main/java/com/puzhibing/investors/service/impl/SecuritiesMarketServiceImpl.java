@@ -8,14 +8,12 @@ import com.puzhibing.investors.pojo.*;
 import com.puzhibing.investors.pojo.vo.MarketMovingAverageVo;
 import com.puzhibing.investors.pojo.vo.SecuritiesMarketVo;
 import com.puzhibing.investors.service.*;
-import com.puzhibing.investors.util.CacheUtil;
-import com.puzhibing.investors.util.DateUtil;
-import com.puzhibing.investors.util.FileUtil;
+import com.puzhibing.investors.util.*;
 import com.puzhibing.investors.util.http.HttpClientUtil;
-import com.puzhibing.investors.util.ResultUtil;
 import com.puzhibing.investors.util.http.HttpResult;
 import com.puzhibing.investors.util.redis.RedisUtil;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -50,11 +48,16 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
     @Autowired
     private FileUtil fileUtil;
 
+    @Autowired
+    private ExcelUtil excelUtil;
+
     private Integer pageSize = 5000;
 
     private int number = 0;
 
     private int threadNum = 0;
+
+    private int marketThreadNum = 0;
 
 
     /**
@@ -63,6 +66,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
      */
     @Override
     public void pullSecuritiesMarket() {
+        marketThreadNum = 4;
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -131,17 +135,32 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         securitiesMarket.setLastClosingPrice(sqspj);
                         //计算换手率（成交量/流通股）
                         String string = "0";
-                        if(null != securities.getFlowEquity()){
+                        if(null != securities.getFlowEquity() && securities.getFlowEquity() != 0){
                             string = new BigDecimal(cjl).divide(new BigDecimal(securities.getFlowEquity()), new MathContext(2, RoundingMode.HALF_EVEN)).toString();
                         }
                         securitiesMarket.setTurnoverRate(string);
                         saveMarketToFile(securities.getSystemCode(), securitiesMarket, securitiesMarket.getTradeDate());//保存数据到文件中
                     }
                     System.err.println(sdf_.format(new Date()) + "------更新上证A股日行情数据任务结束。");
+                    marketThreadNum--;
+                    if(marketThreadNum == 0){
+                        List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
+                        checkHistoricalMarketData(securities);
+                        if(number == securities.size() && threadNum == 0){
+                            calculateMovingAverage(null);
+                        }
+                    }
 
-                    calculateMovingAverage("sh_a");
                 }catch (Exception e){
                     e.printStackTrace();
+                    marketThreadNum--;
+                    if(marketThreadNum == 0){
+                        List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
+                        checkHistoricalMarketData(securities);
+                        if(number == securities.size() && threadNum == 0){
+                            calculateMovingAverage(null);
+                        }
+                    }
                 }
             }
         }).start();
@@ -213,16 +232,31 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         shbSecuritiesMarket.setLastClosingPrice(sqspj);
                         //计算换手率（成交量/流通股）
                         String string = "0";
-                        if(null != securities.getFlowEquity()){
+                        if(null != securities.getFlowEquity() && securities.getFlowEquity() != 0){
                             string = new BigDecimal(cjl).divide(new BigDecimal(securities.getFlowEquity()), new MathContext(2, RoundingMode.HALF_EVEN)).toString();
                         }
                         shbSecuritiesMarket.setTurnoverRate(string);
                         saveMarketToFile(securities.getSystemCode(), shbSecuritiesMarket, shbSecuritiesMarket.getTradeDate());//保存数据到文件中
                     }
                     System.err.println(sdf_.format(new Date()) + "------更新上证B股日行情数据任务结束。");
-                    calculateMovingAverage("sh_b");
+                    marketThreadNum--;
+                    if(marketThreadNum == 0){
+                        List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
+                        checkHistoricalMarketData(securities);
+                        if(number == securities.size() && threadNum == 0){
+                            calculateMovingAverage(null);
+                        }
+                    }
                 }catch (Exception e){
                     e.printStackTrace();
+                    marketThreadNum--;
+                    if(marketThreadNum == 0){
+                        List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
+                        checkHistoricalMarketData(securities);
+                        if(number == securities.size() && threadNum == 0){
+                            calculateMovingAverage(null);
+                        }
+                    }
                 }
             }
         }).start();
@@ -239,7 +273,8 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                     SecuritiesCategory sz_a = securitiesCategoryService.queryByCode("sz_a");
                     List<Securities> securities1 = securitiesMapper.queryList(null, sz_a.getId(), null, null);
                     for(Securities securities : securities1){
-                        String urlSZ = "http://www.szse.cn/api/market/ssjjhq/getTimeData?marketId=1&code=" + securities.getCode();
+                        double random = Math.random();
+                        String urlSZ = "http://www.szse.cn/api/market/ssjjhq/getTimeData?random=" + random + "&marketId=1&code=" + securities.getCode();
                         Map<String, String> header = new HashMap<>();
                         header.put("Accept", "application/json, text/javascript, */*; q=0.01");
                         header.put("Accept-Encoding", "gzip, deflate");
@@ -249,7 +284,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         header.put("Content-Type", "application/json");
                         header.put("Host", "www.szse.cn");
                         header.put("Pragma", "no-cache");
-                        header.put("Referer", "http://www.szse.cn/market/product/stock/list/index.html");
+                        header.put("Referer", "http://www.szse.cn/market/trend/index.html");
                         header.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36");
                         header.put("X-Request-Type", "ajax");
                         header.put("X-Requested-With", "XMLHttpRequest");
@@ -318,7 +353,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         szaSecuritiesMarket.setLastClosingPrice(sqspj);
                         //计算换手率（成交量/流通股）
                         String string = "0";
-                        if(null != securities.getFlowEquity()){
+                        if(null != securities.getFlowEquity() && securities.getFlowEquity() != 0){
                             string = new BigDecimal(cjl).divide(new BigDecimal(securities.getFlowEquity()), new MathContext(2, RoundingMode.HALF_EVEN)).toString();
                         }
                         szaSecuritiesMarket.setTurnoverRate(string);
@@ -327,9 +362,24 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         Thread.sleep(new Random().nextInt(10) * 1000);//暂停10内随机秒，防止因频繁调用被限制IP
                     }
                     System.err.println(sdf_.format(new Date()) + "------更新深证A股日行情数据任务结束。");
-                    calculateMovingAverage("sz_a");
+                    marketThreadNum--;
+                    if(marketThreadNum == 0){
+                        List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
+                        checkHistoricalMarketData(securities);
+                        if(number == securities.size() && threadNum == 0){
+                            calculateMovingAverage(null);
+                        }
+                    }
                 }catch (Exception e){
                     e.printStackTrace();
+                    marketThreadNum--;
+                    if(marketThreadNum == 0){
+                        List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
+                        checkHistoricalMarketData(securities);
+                        if(number == securities.size() && threadNum == 0){
+                            calculateMovingAverage(null);
+                        }
+                    }
                 }
             }
         }).start();
@@ -347,7 +397,8 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                     SecuritiesCategory sz_b = securitiesCategoryService.queryByCode("sz_b");
                     List<Securities> securities2 = securitiesMapper.queryList(null, sz_b.getId(), null, null);
                     for(Securities securities : securities2){
-                        String urlSZ = "http://www.szse.cn/api/market/ssjjhq/getTimeData?marketId=1&code=" + securities.getCode();
+                        double random = Math.random();
+                        String urlSZ = "http://www.szse.cn/api/market/ssjjhq/getTimeData?random=" + random + "&marketId=1&code=" + securities.getCode();
                         Map<String, String> header = new HashMap<>();
                         header.put("Accept", "application/json, text/javascript, */*; q=0.01");
                         header.put("Accept-Encoding", "gzip, deflate");
@@ -357,7 +408,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         header.put("Content-Type", "application/json");
                         header.put("Host", "www.szse.cn");
                         header.put("Pragma", "no-cache");
-                        header.put("Referer", "http://www.szse.cn/market/product/stock/list/index.html");
+                        header.put("Referer", "http://www.szse.cn/market/trend/index.html");
                         header.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36");
                         header.put("X-Request-Type", "ajax");
                         header.put("X-Requested-With", "XMLHttpRequest");
@@ -424,7 +475,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         szbSecuritiesMarket.setDealAmount(cjje);
                         szbSecuritiesMarket.setLastClosingPrice(sqspj);
                         String string = "0";
-                        if(null != securities.getFlowEquity()){
+                        if(null != securities.getFlowEquity() && securities.getFlowEquity() != 0){
                             string = new BigDecimal(cjl).divide(new BigDecimal(securities.getFlowEquity()), new MathContext(2, RoundingMode.HALF_EVEN)).toString();
                         }
                         szbSecuritiesMarket.setTurnoverRate(string);
@@ -433,9 +484,24 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         Thread.sleep(new Random().nextInt(10) * 1000);//暂停10内随机秒，防止因频繁调用被限制IP
                     }
                     System.err.println(sdf_.format(new Date()) + "------更新深证B股日行情数据任务结束。");
-                    calculateMovingAverage("sz_b");
+                    marketThreadNum--;
+                    if(marketThreadNum == 0){
+                        List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
+                        checkHistoricalMarketData(securities);
+                        if(number == securities.size() && threadNum == 0){
+                            calculateMovingAverage(null);
+                        }
+                    }
                 }catch (Exception e){
                     e.printStackTrace();
+                    marketThreadNum--;
+                    if(marketThreadNum == 0){
+                        List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
+                        checkHistoricalMarketData(securities);
+                        if(number == securities.size() && threadNum == 0){
+                            calculateMovingAverage(null);
+                        }
+                    }
                 }
             }
         }).start();
@@ -451,7 +517,10 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
         for(int m = 0; m < list.size(); m++){
             Securities s = list.get(m);
             try {
-                String value = redisUtil.getValue(s.getSystemCode());
+                String value = fileUtil.read("market\\" + s.getSystemCode() + ".json");
+                if(!StringUtils.hasLength(value)){
+                    continue;
+                }
                 JSONObject jsonObject = JSON.parseObject(value);
                 List<SecuritiesMarketVo> market = jsonObject.getJSONArray("market").toJavaList(SecuritiesMarketVo.class);
                 Map<String, Object> map = new HashMap<>();
@@ -468,7 +537,6 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                     }
                     map.put("m_avg_" + d, agr);
                 }
-                redisUtil.setStrValue("m_avg_" + s.getSystemCode() + ".json", JSON.toJSONString(map));
                 fileUtil.write("movingAverage\\" + s.getSystemCode() + ".json", JSON.toJSONString(map));
             }catch (Exception e){
                 try {
@@ -480,7 +548,6 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                     List<SecuritiesMarketVo> securitiesMarketVos = queryHistoricalMatket(s);
                     jsonObject.put("market", securitiesMarketVos);
                     //处理完数据化保存到文件中
-                    redisUtil.setStrValue(s.getSystemCode(), jsonObject.toJSONString());
                     fileUtil.write("market\\" + s.getSystemCode() + ".json", jsonObject.toJSONString());//写入
                     m--;//重新对当前数据进行处理
                     continue;
@@ -534,20 +601,16 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             List<Double> cs1 = new ArrayList<>();//测试1
             List<Double> cs2 = new ArrayList<>();//测试2
             String startTime = "";
-            String value = redisUtil.getValue(s.getSystemCode());
+            String value = fileUtil.read("market\\" + s.getSystemCode() + ".json");
             JSONObject jsonObject = JSON.parseObject(value);
             List<SecuritiesMarket> securitiesMarkets = queryList(jsonObject, start, end);
             for(int i = 0; i < securitiesMarkets.size(); i++){
                 SecuritiesMarket now = securitiesMarkets.get(i);
             }
-
-            int number = 0;
-            BigDecimal top = new BigDecimal(0);
-            BigDecimal low = new BigDecimal(0);
-            int ye = Integer.valueOf(sdf1.format(securitiesMarkets.get(0).getTradeDate())).intValue();
+            BigDecimal total = new BigDecimal(0);
             for(SecuritiesMarket securitiesMarket : securitiesMarkets){
                 d.add(sdf.format(securitiesMarket.getTradeDate()));
-                day.add(Double.valueOf(securitiesMarket.getClosingPrice()));//收盘价
+//                day.add(Double.valueOf(securitiesMarket.getClosingPrice()));//收盘价
 //                h.add(null == securitiesMarket.getTurnoverRate() ? 0 : Double.valueOf(securitiesMarket.getTurnoverRate()));//换手率
 //                zf.add(null == securitiesMarket.getAmplitude() ? 0 : Double.valueOf(securitiesMarket.getAmplitude()));//振幅
 //                zdl.add(null == securitiesMarket.getRiseFallRatio() ? 0 : Double.valueOf(securitiesMarket.getRiseFallRatio()));//涨跌率
@@ -572,23 +635,16 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
 //                Double yy = getAvgClosingPrice(jsonObject, securitiesMarket.getTradeDate(), 365);
 //                years.add(yy);
 
-                if(ye == y1){
-                    number++;
-                    top = top.add(new BigDecimal(securitiesMarket.getTopPrice()));
-                    cs1.add(top.divide(new BigDecimal(number), new MathContext(2, RoundingMode.HALF_EVEN)).doubleValue());
-                    low = low.add(new BigDecimal(securitiesMarket.getLowestPrice()));
-                    cs2.add(low.divide(new BigDecimal(number), new MathContext(2, RoundingMode.HALF_EVEN)).doubleValue());
+                if(Double.valueOf(securitiesMarket.getRiseFallPrice()) > 0){
+                    total = new BigDecimal(securitiesMarket.getTurnoverRate());
                 }else{
-                    ye = y1;
-                    number = 1;
-                    top = new BigDecimal(securitiesMarket.getTopPrice());
-                    low = new BigDecimal(securitiesMarket.getLowestPrice());
-                    cs1.add(top.doubleValue());
-                    cs2.add(low.doubleValue());
+                    total = new BigDecimal(securitiesMarket.getTurnoverRate()).multiply(new BigDecimal(-1));
                 }
+                cs1.add(total.doubleValue());
             }
             d.add(sdf.format(new Date(System.currentTimeMillis() + (2 * 24 * 60 * 60 * 1000))));
             map.put("id", s.getId());
+            map.put("systemCode", s.getSystemCode());
             map.put("latitude", d);
             map.put("closingPrice", day);
             map.put("turnoverRate", h);
@@ -743,7 +799,6 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                             List<SecuritiesMarketVo> securitiesMarketVos = queryHistoricalMatket(s);
                             jsonObject.put("market", securitiesMarketVos);
                             //处理完数据化保存到文件中
-                            redisUtil.setStrValue(s.getSystemCode(), jsonObject.toJSONString());
                             fileUtil.write("market\\" + s.getSystemCode() + ".json", jsonObject.toJSONString());//写入
                             String value = redisUtil.getValue("securitiesId");
                             if(StringUtils.hasLength(value)){
@@ -752,7 +807,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                             }
                             ids.add(s.getId());
                             redisUtil.setStrValue("securitiesId", JSON.toJSONString(ids));
-                            Thread.sleep(new Random().nextInt(60) * 1000);//暂停60内随机秒，防止因频繁调用被限制IP
+                            Thread.sleep(new Random().nextInt(10) * 1000);//暂停60内随机秒，防止因频繁调用被限制IP
                         }
 
                         //检测所有数据是否已处理完
@@ -760,7 +815,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         if(CacheUtil.threads.size() == 0){
                             System.err.println(sdf_.format(new Date()) + "------同步历史数据：任务全部结束。");
                             System.err.println(sdf_.format(new Date()) + "------同步历史数据：开始检查是否已全部完成。");
-                            int num = securities.size() - fileUtil.findFileCount();
+                            int num = securities.size() - fileUtil.findFileCount("market\\");
                             if(num != 0){//数据没有处理完
                                 System.err.println(sdf_.format(new Date()) + "------同步历史数据：数据还未处理完，继续进行处理。");
                                 synchronizeHistoricalData(num < 9 ? num : num / 9);
@@ -772,7 +827,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         CacheUtil.threads.remove("historicalMarket_" + finalN);
                         if(CacheUtil.threads.size() == 0){
                             System.err.println(sdf_.format(new Date()) + "------同步历史数据：数据还未处理完，继续进行处理。");
-                            int num = securities.size() - fileUtil.findFileCount();
+                            int num = securities.size() - fileUtil.findFileCount("market\\");
                             synchronizeHistoricalData(num < 9 ? num : num / 9);
                         }
                     }
@@ -864,7 +919,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
      */
     public void saveMarketToFile(String fileName, Object o, Date tradeDate){
         try {
-            String value = redisUtil.getValue(fileName);
+            String value = fileUtil.read("market\\" + fileName + ".json");
             JSONObject jsonObject1 = JSON.parseObject(value);
             if(null != jsonObject1){
                 JSONArray market = jsonObject1.getJSONArray("market");
@@ -887,63 +942,12 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                 jsonObject1 = new JSONObject();
                 jsonObject1.put("market", JSON.toJSONString(Arrays.asList(o)));
             }
-            redisUtil.setStrValue(fileName, jsonObject1.toJSONString());
             fileUtil.write("market\\" + fileName + ".json", jsonObject1.toJSONString());//更新到本地文件中
         }catch (Exception e){
             e.printStackTrace();
         }
     }
 
-
-    /**
-     * 同步历史数据到缓存中
-     * @param fileName
-     * @param o
-     * @param tradeDate
-     */
-    public void synchronizeHistoricalMarket (String fileName, Object o, Date tradeDate){
-        try {
-            String value = redisUtil.getValue(fileName);
-            JSONObject jsonObject = JSON.parseObject(value);
-            if(null != jsonObject){
-                JSONArray market = jsonObject.getJSONArray("market");
-                if(null == market){
-                    market = new JSONArray();
-                }
-                int b = 0;
-                int i = 0;
-                for(int j = 0; j < market.size(); j++){//判断数据处理方式（0=插入新数据，1=更新历史数据，2=不处理）
-                    Long tradeDate1 = market.getJSONObject(j).getLong("tradeDate");
-                    String turnoverRate = market.getJSONObject(j).getString("turnoverRate");
-                    if(!StringUtils.hasLength(turnoverRate) && tradeDate.getTime() == tradeDate1){//更新
-                        i = j;
-                        b = 1;
-                        break;
-                    }
-                    if(StringUtils.hasLength(turnoverRate) && tradeDate.getTime() == tradeDate1){//不处理
-                        b = 2;
-                        break;
-                    }
-                }
-                if(b == 0){//新增
-                    market.add(o);
-                }
-                if(b == 1){//更新
-                    market.remove(i);
-                    market.add(o);
-                }
-                if(b == 2){//不处理
-                    return;
-                }
-            }else{
-                jsonObject = new JSONObject();
-                jsonObject.put("market", Arrays.asList(o));
-            }
-            redisUtil.setStrValue(fileName, sort(jsonObject, o.getClass()));
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-    }
 
     /**
      * 对数据进行排序
@@ -971,38 +975,38 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
     @Override
     public void initMarketToCache() throws Exception {
         List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
-        int base = 500;//数据分隔基数
-        int num = (securities.size() / base) + 1;//计算需要的线程数
-        SimpleDateFormat sdf_ = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        System.err.println(sdf_.format(new Date()) + "------初始化数据到缓存：线程总数--------------" + num);
-        for(int n = 0; n < num; n++) {
-            int start = n * base;
-            int end = (n + 1) * base;//结束坐标
-            if (end > securities.size()) {
-                end = securities.size();
-            }
-            List<Securities> list = securities.subList(start, end);
-            int finalN = n;
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    for (Securities s : list) {
-                        String read = fileUtil.read("market\\" + s.getSystemCode() + ".json");//读取本地文件中的数据
-                        if(StringUtils.hasLength(read)){
-                            redisUtil.setStrValue(s.getSystemCode(), read);
-                        }
-
-                        read = fileUtil.read("movingAverage\\" + s.getSystemCode() + ".json");//读取本地文件中的数据
-                        if(StringUtils.hasLength(read)){
-                            redisUtil.setStrValue("m_avg_" + s.getSystemCode(), read);
-                        }
-                    }
-                    System.err.println(sdf_.format(new Date()) + "------初始化数据到缓存：线程 " + (finalN + 1) + " 任务结束。");
-                }
-            }).start();
-        }
-
-
+//        int base = 500;//数据分隔基数
+//        int num = (securities.size() / base) + 1;//计算需要的线程数
+//        SimpleDateFormat sdf_ = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+//        System.err.println(sdf_.format(new Date()) + "------初始化数据到缓存：线程总数--------------" + num);
+//        for(int n = 0; n < num; n++) {
+//            int start = n * base;
+//            int end = (n + 1) * base;//结束坐标
+//            if (end > securities.size()) {
+//                end = securities.size();
+//            }
+//            List<Securities> list = securities.subList(start, end);
+//            int finalN = n;
+//            new Thread(new Runnable() {
+//                @Override
+//                public void run() {
+//                    for (Securities s : list) {
+//                        String read = fileUtil.read("market\\" + s.getSystemCode() + ".json");//读取本地文件中的数据
+//                        if(StringUtils.hasLength(read)){
+//                            redisUtil.setStrValue(s.getSystemCode(), read);
+//                        }
+//
+//                        read = fileUtil.read("movingAverage\\" + s.getSystemCode() + ".json");//读取本地文件中的数据
+//                        if(StringUtils.hasLength(read)){
+//                            redisUtil.setStrValue("m_avg_" + s.getSystemCode(), read);
+//                        }
+//                    }
+//                    System.err.println(sdf_.format(new Date()) + "------初始化数据到缓存：线程 " + (finalN + 1) + " 任务结束。");
+//                }
+//            }).start();
+//        }
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        System.err.println(sdf.format(new Date()) + "------初始化数据到缓存任务开始");
         Set<Integer> ids = new HashSet<>();
         for(Securities s : securities){
             String read = fileUtil.read("market\\" + s.getSystemCode() + ".json");//读取本地文件中的数据
@@ -1011,6 +1015,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             }
         }
         redisUtil.setStrValue("securitiesId", JSON.toJSONString(ids));
+        System.err.println(sdf.format(new Date()) + "------初始化数据到缓存任务结束。");
     }
 
     /**
@@ -1018,22 +1023,24 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
      */
     @Override
     public void checkHistoricalMarketData(List<Securities> list) {
+        List<Securities> list1 = list;
+        CacheUtil.securities = new ArrayList<>();
         number = 0;
         threadNum = 10;
-        if(null == list){
-            list = securitiesMapper.querySecuritiesList(null, null);
+        if(null == list1){
+            list1 = securitiesMapper.querySecuritiesList(null, null);
         }
         SimpleDateFormat sdf_ = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         System.err.println(sdf_.format(new Date()) + "------检查历史数据任务开始。");
-        int num = list.size() / 9;
+        int num = list1.size() / 9;
         for(int n = 0; n < 10; n++){
             int start = n * num;
             int end = (n + 1) * num;
             if(n == 9){
-                end = list.size();
+                end = list1.size();
             }
-            List<Securities> securities = list.subList(start, end);
-            List<Securities> finalList = list;
+            List<Securities> securities = list1.subList(start, end);
+            List<Securities> finalList = list1;
             new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -1065,21 +1072,18 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                                 }
                                 if(b){//数据不完整，重新保存新数据
                                     jsonObject.put("market", securitiesMarketVos);
-                                    redisUtil.setStrValue(s.getSystemCode(), jsonObject.toJSONString());
                                     fileUtil.write("market\\" + s.getSystemCode() + ".json", jsonObject.toJSONString());//写入
                                 }
                             }
                             number++;
-                            Thread.sleep(30 * 1000);
+                            Thread.sleep(new Random().nextInt(10) * 1000);//暂停10内随机秒，防止因频繁调用被限制IP
                         }
                         threadNum--;
-                        if(number == finalList.size() && threadNum == 0){//所有线程处理完成后
-                            System.err.println(sdf_.format(new Date()) + "------检查历史数据任务结束，等待12小时后新一轮继续执行。");
-                            Thread.sleep(12 * 60 * 60 * 1000);//暂停12小时后重新新一轮执行
-                            SecuritiesMarketServiceImpl.this.checkHistoricalMarketData(null);//处理完成后重新调用自己继续新一轮的检查处理
-                        }
                         if(number != finalList.size() && threadNum == 0){//所有线程处理完成，但是任务没有处理完
                             SecuritiesMarketServiceImpl.this.checkHistoricalMarketData(CacheUtil.securities);
+                        }
+                        if(number == finalList.size() && threadNum == 0){
+                            System.err.println(sdf_.format(new Date()) + "------检查历史数据任务结束。");
                         }
                     }catch (Exception e){
                         CacheUtil.securities.addAll(securities.subList(index, securities.size()));
@@ -1207,5 +1211,57 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                 }
             }
         }).start();
+    }
+
+    /**
+     * 导出数据到excel
+     * @param systemCode
+     * @return
+     * @throws Exception
+     */
+    @Override
+    public HSSFWorkbook exportMarket(String systemCode) throws Exception {
+        Securities securities = securitiesMapper.querySystemCode(systemCode);
+        String value = fileUtil.read("market\\" + securities.getSystemCode() + ".json");
+        List<List<List<String>>> lists = new ArrayList<>();
+        List<List<String>> data = new ArrayList<>();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        if(StringUtils.hasLength(value)){
+            JSONObject jsonObject = JSON.parseObject(value);
+            List<SecuritiesMarketVo> market = jsonObject.getJSONArray("market").toJavaList(SecuritiesMarketVo.class);
+            for(SecuritiesMarketVo sm : market){
+                List<String> list = new ArrayList<>();
+                list.add(sdf.format(sm.getTradeDate()));
+                list.add(sm.getLastClosingPrice());
+                list.add(sm.getClosingPrice());
+                list.add(sm.getRiseFallPrice());
+                list.add(sm.getRiseFallRatio());
+                list.add(sm.getOpeningPrice());
+                list.add(sm.getTopPrice());
+                list.add(sm.getLowestPrice());
+                list.add(sm.getAmplitude());
+                list.add(sm.getVolume());
+                list.add(sm.getDealAmount());
+                list.add(sm.getTurnoverRate());
+                data.add(list);
+            }
+        }
+        lists.add(data);
+        List<List<String>> titles = new ArrayList<>();
+        List<String> title = new ArrayList<>();
+        title.add("交易日期");
+        title.add("上期收盘价");
+        title.add("本期收盘价");
+        title.add("涨跌金额");
+        title.add("涨跌率（%）");
+        title.add("开盘价");
+        title.add("最高价");
+        title.add("最低价");
+        title.add("振幅率（%）");
+        title.add("成交量（股）");
+        title.add("成交金额（元）");
+        title.add("换手率（%）");
+        titles.add(title);
+        return excelUtil.writeDataToExcel(titles, lists);
     }
 }

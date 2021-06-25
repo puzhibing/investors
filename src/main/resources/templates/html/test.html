@@ -37,6 +37,7 @@
                         <button type="submit" class="layui-btn" lay-submit="" lay-filter="demo1" onclick="getAllData(2)">立即提交</button>
                         <button type="reset" class="layui-btn layui-btn-primary">重置</button>
                     </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -84,6 +85,10 @@
         }
     });
 
+    function exportMarket(systemCode) {
+        window.location.href = path + "/test/exportMarket?systemCode=" +systemCode;
+    }
+
     function getAllData(type) {
         if(type == 2){//清除历史页面数据
             $('.chart').html('');
@@ -100,11 +105,15 @@
                 var data = res.data;
                 for(var i = 0; i < data.length; i++) {
                     var id = data[i].id;
+                    var systemCode = data[i].systemCode;
                     $('.chart').append('' +
                         '<div style="width: 100%" id="' + id + '">' +
                         '   <div style="width: 60%; float: left;">' +
                         '       <div id="closingPrice' + id + '" style="width: 100%;height:650px;"></div>' +
                         '       <div id="riseFallPrice' + id + '" style="width: 100%;height:650px;"></div>' +
+                        '   </div>' +
+                        '   <div>' +
+                        '      <button class="layui-btn layui-btn-primary" onclick="exportMarket(\'' + systemCode + '\')">下载</button> ' +
                         '   </div>' +
                         '</div>');
                 }

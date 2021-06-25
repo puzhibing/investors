@@ -228,7 +228,8 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
                      */
                     int l = 1;
                     while (true){
-                        String urlSZA = "http://www.szse.cn/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1110&TABKEY=tab1&PAGENO=" + l + "&PAGESIZE=20";
+                        double random = Math.random();
+                        String urlSZA = "http://www.szse.cn/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1110&TABKEY=tab1&random=" + random + "&PAGENO=" + l + "&PAGESIZE=20";
                         Map<String, String> header = new HashMap<>();
                         header.put("Accept", "application/json, text/javascript, */*; q=0.01");
                         header.put("Accept-Encoding", "gzip, deflate");
@@ -239,7 +240,7 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
                         header.put("Host", "www.szse.cn");
                         header.put("Pragma", "no-cache");
                         header.put("Referer", "http://www.szse.cn/market/product/stock/list/index.html");
-                        header.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36");
+                        header.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36");
                         header.put("X-Request-Type", "ajax");
                         header.put("X-Requested-With", "XMLHttpRequest");
                         HttpResult httpResult = httpClientUtil.pushHttpRequset("GET", urlSZA, null, header, null);
@@ -273,7 +274,8 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
                                 securitiesMapper.insert(securities);
                             }
                             //更新股本数据
-                            String urlSZA_ = "http://www.szse.cn/api/report/index/companyGeneralization?secCode=" + code;
+                            double random1 = Math.random();
+                            String urlSZA_ = "http://www.szse.cn/api/report/index/companyGeneralization?random=" + random1 + "&secCode=" + code;
                             header = new HashMap<>();
                             header.put("Accept", "application/json, text/javascript, */*; q=0.01");
                             header.put("Accept-Encoding", "gzip, deflate");
@@ -283,8 +285,8 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
                             header.put("Content-Type", "application/json");
                             header.put("Host", "www.szse.cn");
                             header.put("Pragma", "no-cache");
-                            header.put("Referer", "http://www.szse.cn/market/product/stock/list/index.html");
-                            header.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36");
+                            header.put("Referer", "http://www.szse.cn/certificate/individual/index.html?code=" + code);
+                            header.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36");
                             header.put("X-Request-Type", "ajax");
                             header.put("X-Requested-With", "XMLHttpRequest");
                             httpResult = httpClientUtil.pushHttpRequset("GET", urlSZA_, null, header, null);
@@ -324,7 +326,8 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
                      */
                     int l = 1;
                     while (true){
-                        String urlSZB = "http://www.szse.cn/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1110&TABKEY=tab2&PAGENO=" + l + "&PAGESIZE=20";
+                        double random = Math.random();
+                        String urlSZB = "http://www.szse.cn/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1110&TABKEY=tab2&random=" + random + "&PAGENO=" + l + "&PAGESIZE=20";
                         Map<String, String> header = new HashMap<>();
                         header.put("Accept", "application/json, text/javascript, */*; q=0.01");
                         header.put("Accept-Encoding", "gzip, deflate");
@@ -369,7 +372,8 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
                                 securitiesMapper.insert(securities);
                             }
                             //更新股本数据
-                            String urlSZB_ = "http://www.szse.cn/api/report/index/companyGeneralization?secCode=" + code;
+                            double random1 = Math.random();
+                            String urlSZB_ = "http://www.szse.cn/api/report/index/companyGeneralization?random=" + random1 + "&secCode=" + code;
                             header = new HashMap<>();
                             header.put("Accept", "application/json, text/javascript, */*; q=0.01");
                             header.put("Accept-Encoding", "gzip, deflate");
@@ -379,8 +383,8 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
                             header.put("Content-Type", "application/json");
                             header.put("Host", "www.szse.cn");
                             header.put("Pragma", "no-cache");
-                            header.put("Referer", "http://www.szse.cn/market/product/stock/list/index.html");
-                            header.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36");
+                            header.put("Referer", "http://www.szse.cn/certificate/individual/index.html?code=" + code);
+                            header.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36");
                             header.put("X-Request-Type", "ajax");
                             header.put("X-Requested-With", "XMLHttpRequest");
                             httpResult = httpClientUtil.pushHttpRequset("GET", urlSZB_, null, header, null);

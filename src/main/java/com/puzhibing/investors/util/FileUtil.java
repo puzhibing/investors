@@ -102,8 +102,8 @@ public class FileUtil {
      * 获取文件目录下文件的数量
      * @return
      */
-    public int findFileCount(){
-        File file = new File(FILE_PATH);
+    public int findFileCount(String path){
+        File file = new File(FILE_PATH + path);
         File[] files = file.listFiles();
         int count = 0;
         for(File f : files){

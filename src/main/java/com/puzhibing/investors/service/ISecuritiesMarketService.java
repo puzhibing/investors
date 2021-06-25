@@ -2,6 +2,7 @@ package com.puzhibing.investors.service;
 
 import com.puzhibing.investors.pojo.Securities;
 import com.puzhibing.investors.util.ResultUtil;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 
 import java.util.List;
 import java.util.Map;
@@ -67,4 +68,13 @@ public interface ISecuritiesMarketService {
      * @throws Exception
      */
     void calculateMovingAverage(String securitiesCategoryCode) throws Exception;
+
+
+    /**
+     * 导出数据到excel
+     * @param systemCode
+     * @return
+     * @throws Exception
+     */
+    HSSFWorkbook exportMarket(String systemCode) throws Exception;
 }

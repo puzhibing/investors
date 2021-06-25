@@ -39,7 +39,7 @@ public class TaskUtil {
     /**
      * 每天的8:30点执行的任务
      */
-    @Scheduled(cron = "0 30 08 * * *")
+    @Scheduled(cron = "0 30 09 * * *")
     public void taskDay9(){
         try {
             securitiesService.pullSecurities();

@@ -68,4 +68,12 @@ public interface SecuritiesMapper {
     @UpdateProvider(type = SecuritiesSqlProvider.class, method = "updateById")
     void updateById(Securities securities);
 
+
+    /**
+     * 根据系统编号获取数据
+     * @param systemCode
+     * @return
+     */
+    @SelectProvider(type = SecuritiesSqlProvider.class, method = "querySystemCode")
+    Securities querySystemCode(String systemCode);
 }

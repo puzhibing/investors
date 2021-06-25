@@ -106,4 +106,17 @@ public class SecuritiesSqlProvider {
                     .WHERE("id = #{id}");
         }}.toString();
     }
+
+
+    /**
+     * 根据系统编号获取数据
+     * @return
+     */
+    public String querySystemCode(){
+        return new SQL(){{
+            SELECT("id, " + COLUMNS)
+                    .FROM(TABLE)
+                    .WHERE("systemCode = #{systemCode}");
+        }}.toString();
+    }
 }
