@@ -147,7 +147,10 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
                         checkHistoricalMarketData(securities);
                         if(number == securities.size() && threadNum == 0){
-                            calculateMovingAverage(null);
+                            calculateMovingAverage("sh_a");
+                            calculateMovingAverage("sh_b");
+                            calculateMovingAverage("sz_a");
+                            calculateMovingAverage("sz_b");
                         }
                     }
 
@@ -158,7 +161,10 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
                         checkHistoricalMarketData(securities);
                         if(number == securities.size() && threadNum == 0){
-                            calculateMovingAverage(null);
+                            calculateMovingAverage("sh_a");
+                            calculateMovingAverage("sh_b");
+                            calculateMovingAverage("sz_a");
+                            calculateMovingAverage("sz_b");
                         }
                     }
                 }
@@ -244,7 +250,10 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
                         checkHistoricalMarketData(securities);
                         if(number == securities.size() && threadNum == 0){
-                            calculateMovingAverage(null);
+                            calculateMovingAverage("sh_a");
+                            calculateMovingAverage("sh_b");
+                            calculateMovingAverage("sz_a");
+                            calculateMovingAverage("sz_b");
                         }
                     }
                 }catch (Exception e){
@@ -254,7 +263,10 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
                         checkHistoricalMarketData(securities);
                         if(number == securities.size() && threadNum == 0){
-                            calculateMovingAverage(null);
+                            calculateMovingAverage("sh_a");
+                            calculateMovingAverage("sh_b");
+                            calculateMovingAverage("sz_a");
+                            calculateMovingAverage("sz_b");
                         }
                     }
                 }
@@ -367,7 +379,10 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
                         checkHistoricalMarketData(securities);
                         if(number == securities.size() && threadNum == 0){
-                            calculateMovingAverage(null);
+                            calculateMovingAverage("sh_a");
+                            calculateMovingAverage("sh_b");
+                            calculateMovingAverage("sz_a");
+                            calculateMovingAverage("sz_b");
                         }
                     }
                 }catch (Exception e){
@@ -377,7 +392,10 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
                         checkHistoricalMarketData(securities);
                         if(number == securities.size() && threadNum == 0){
-                            calculateMovingAverage(null);
+                            calculateMovingAverage("sh_a");
+                            calculateMovingAverage("sh_b");
+                            calculateMovingAverage("sz_a");
+                            calculateMovingAverage("sz_b");
                         }
                     }
                 }
@@ -489,7 +507,10 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
                         checkHistoricalMarketData(securities);
                         if(number == securities.size() && threadNum == 0){
-                            calculateMovingAverage(null);
+                            calculateMovingAverage("sh_a");
+                            calculateMovingAverage("sh_b");
+                            calculateMovingAverage("sz_a");
+                            calculateMovingAverage("sz_b");
                         }
                     }
                 }catch (Exception e){
@@ -499,7 +520,10 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
                         checkHistoricalMarketData(securities);
                         if(number == securities.size() && threadNum == 0){
-                            calculateMovingAverage(null);
+                            calculateMovingAverage("sh_a");
+                            calculateMovingAverage("sh_b");
+                            calculateMovingAverage("sz_a");
+                            calculateMovingAverage("sz_b");
                         }
                     }
                 }
@@ -1026,17 +1050,17 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
         List<Securities> list1 = list;
         CacheUtil.securities = new ArrayList<>();
         number = 0;
-        threadNum = 10;
+        threadNum = list1.size() % 100 != 0 ? (list1.size() / 100) + 1 : list1.size() / 100;
         if(null == list1){
             list1 = securitiesMapper.querySecuritiesList(null, null);
         }
         SimpleDateFormat sdf_ = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         System.err.println(sdf_.format(new Date()) + "------检查历史数据任务开始。");
-        int num = list1.size() / 9;
-        for(int n = 0; n < 10; n++){
+        int num = list1.size() / (threadNum - 1);
+        for(int n = 0; n < threadNum; n++){
             int start = n * num;
             int end = (n + 1) * num;
-            if(n == 9){
+            if(n == (threadNum - 1)){
                 end = list1.size();
             }
             List<Securities> securities = list1.subList(start, end);

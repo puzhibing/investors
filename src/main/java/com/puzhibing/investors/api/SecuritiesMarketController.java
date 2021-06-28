@@ -41,7 +41,10 @@ public class SecuritiesMarketController {
     @GetMapping("/calculateMovingAverage")
     public ResultUtil calculateMovingAverage(){
         try {
-            securitiesMarketService.calculateMovingAverage(null);
+            securitiesMarketService.calculateMovingAverage("sh_a");
+            securitiesMarketService.calculateMovingAverage("sh_b");
+            securitiesMarketService.calculateMovingAverage("sz_a");
+            securitiesMarketService.calculateMovingAverage("sz_b");
             return ResultUtil.success();
         }catch (Exception e){
             e.printStackTrace();
