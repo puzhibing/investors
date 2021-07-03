@@ -162,19 +162,21 @@ public class HttpClientUtil {
                 break;
         }
         HttpResult httpResult = null;
-        try {
-            int statusCode = httpResponse.getStatusLine().getStatusCode();
-            String content = EntityUtils.toString(httpResponse.getEntity(), "UTF-8");
-            httpResult = HttpResult.getHttpResult(statusCode, content);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }finally {
+        if(null != httpResponse){
             try {
-                if(null != httpResponse){
-                    httpResponse.close();
-                }
-            }catch (Exception e){
+                int statusCode = httpResponse.getStatusLine().getStatusCode();
+                String content = EntityUtils.toString(httpResponse.getEntity(), "UTF-8");
+                httpResult = HttpResult.getHttpResult(statusCode, content);
+            } catch (IOException e) {
                 e.printStackTrace();
+            }finally {
+                try {
+                    if(null != httpResponse){
+                        httpResponse.close();
+                    }
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
             }
         }
         return httpResult;

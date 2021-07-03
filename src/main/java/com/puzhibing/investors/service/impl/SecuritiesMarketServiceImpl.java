@@ -57,8 +57,6 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
 
     private int threadNum = 0;
 
-    private int marketThreadNum = 0;
-
 
     /**
      * 获取并添加证券日行情数据
@@ -66,7 +64,6 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
      */
     @Override
     public void pullSecuritiesMarket() {
-        marketThreadNum = 4;
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -142,31 +139,9 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         saveMarketToFile(securities.getSystemCode(), securitiesMarket, securitiesMarket.getTradeDate());//保存数据到文件中
                     }
                     System.err.println(sdf_.format(new Date()) + "------更新上证A股日行情数据任务结束。");
-                    marketThreadNum--;
-                    if(marketThreadNum == 0){
-                        List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
-                        checkHistoricalMarketData(securities);
-                        if(number == securities.size() && threadNum == 0){
-                            calculateMovingAverage("sh_a");
-                            calculateMovingAverage("sh_b");
-                            calculateMovingAverage("sz_a");
-                            calculateMovingAverage("sz_b");
-                        }
-                    }
-
+                    calculateMovingAverage("sh_a");
                 }catch (Exception e){
                     e.printStackTrace();
-                    marketThreadNum--;
-                    if(marketThreadNum == 0){
-                        List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
-                        checkHistoricalMarketData(securities);
-                        if(number == securities.size() && threadNum == 0){
-                            calculateMovingAverage("sh_a");
-                            calculateMovingAverage("sh_b");
-                            calculateMovingAverage("sz_a");
-                            calculateMovingAverage("sz_b");
-                        }
-                    }
                 }
             }
         }).start();
@@ -245,30 +220,10 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         saveMarketToFile(securities.getSystemCode(), shbSecuritiesMarket, shbSecuritiesMarket.getTradeDate());//保存数据到文件中
                     }
                     System.err.println(sdf_.format(new Date()) + "------更新上证B股日行情数据任务结束。");
-                    marketThreadNum--;
-                    if(marketThreadNum == 0){
-                        List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
-                        checkHistoricalMarketData(securities);
-                        if(number == securities.size() && threadNum == 0){
-                            calculateMovingAverage("sh_a");
-                            calculateMovingAverage("sh_b");
-                            calculateMovingAverage("sz_a");
-                            calculateMovingAverage("sz_b");
-                        }
-                    }
+
+                    calculateMovingAverage("sh_b");
                 }catch (Exception e){
                     e.printStackTrace();
-                    marketThreadNum--;
-                    if(marketThreadNum == 0){
-                        List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
-                        checkHistoricalMarketData(securities);
-                        if(number == securities.size() && threadNum == 0){
-                            calculateMovingAverage("sh_a");
-                            calculateMovingAverage("sh_b");
-                            calculateMovingAverage("sz_a");
-                            calculateMovingAverage("sz_b");
-                        }
-                    }
                 }
             }
         }).start();
@@ -374,30 +329,10 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         Thread.sleep(new Random().nextInt(10) * 1000);//暂停10内随机秒，防止因频繁调用被限制IP
                     }
                     System.err.println(sdf_.format(new Date()) + "------更新深证A股日行情数据任务结束。");
-                    marketThreadNum--;
-                    if(marketThreadNum == 0){
-                        List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
-                        checkHistoricalMarketData(securities);
-                        if(number == securities.size() && threadNum == 0){
-                            calculateMovingAverage("sh_a");
-                            calculateMovingAverage("sh_b");
-                            calculateMovingAverage("sz_a");
-                            calculateMovingAverage("sz_b");
-                        }
-                    }
+
+                    calculateMovingAverage("sz_a");
                 }catch (Exception e){
                     e.printStackTrace();
-                    marketThreadNum--;
-                    if(marketThreadNum == 0){
-                        List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
-                        checkHistoricalMarketData(securities);
-                        if(number == securities.size() && threadNum == 0){
-                            calculateMovingAverage("sh_a");
-                            calculateMovingAverage("sh_b");
-                            calculateMovingAverage("sz_a");
-                            calculateMovingAverage("sz_b");
-                        }
-                    }
                 }
             }
         }).start();
@@ -502,30 +437,9 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         Thread.sleep(new Random().nextInt(10) * 1000);//暂停10内随机秒，防止因频繁调用被限制IP
                     }
                     System.err.println(sdf_.format(new Date()) + "------更新深证B股日行情数据任务结束。");
-                    marketThreadNum--;
-                    if(marketThreadNum == 0){
-                        List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
-                        checkHistoricalMarketData(securities);
-                        if(number == securities.size() && threadNum == 0){
-                            calculateMovingAverage("sh_a");
-                            calculateMovingAverage("sh_b");
-                            calculateMovingAverage("sz_a");
-                            calculateMovingAverage("sz_b");
-                        }
-                    }
+                    calculateMovingAverage("sz_b");
                 }catch (Exception e){
                     e.printStackTrace();
-                    marketThreadNum--;
-                    if(marketThreadNum == 0){
-                        List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
-                        checkHistoricalMarketData(securities);
-                        if(number == securities.size() && threadNum == 0){
-                            calculateMovingAverage("sh_a");
-                            calculateMovingAverage("sh_b");
-                            calculateMovingAverage("sz_a");
-                            calculateMovingAverage("sz_b");
-                        }
-                    }
                 }
             }
         }).start();
@@ -549,18 +463,24 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                 List<SecuritiesMarketVo> market = jsonObject.getJSONArray("market").toJavaList(SecuritiesMarketVo.class);
                 Map<String, Object> map = new HashMap<>();
                 for(int i = 0; i < days.size(); i++){
-                    List<MarketMovingAverageVo> agr = new ArrayList<>();
+                    List<String> agr = new ArrayList<>();
                     Integer d = days.get(i);//天数
                     for(int j = 0; j < market.size(); j++){
                         SecuritiesMarketVo object = market.get(j);
                         Double avg = getAvgClosingPrice(market, object.getTradeDate(), d);
-                        MarketMovingAverageVo marketMovingAverageVo = new MarketMovingAverageVo();
-                        marketMovingAverageVo.setAvg(avg.toString());
-                        marketMovingAverageVo.setDay(object.getTradeDate());
-                        agr.add(marketMovingAverageVo);
+                        agr.add(avg.toString());
                     }
                     map.put("m_avg_" + d, agr);
                 }
+
+                List<String> date = new ArrayList<>();
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                for(int j = 0; j < market.size(); j++){
+                    SecuritiesMarketVo object = market.get(j);
+                    date.add(sdf.format(object.getTradeDate()));
+                }
+                map.put("date", date);
+
                 fileUtil.write("movingAverage\\" + s.getSystemCode() + ".json", JSON.toJSONString(map));
             }catch (Exception e){
                 try {
@@ -632,9 +552,12 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                 SecuritiesMarket now = securitiesMarkets.get(i);
             }
             BigDecimal total = new BigDecimal(0);
+
+            value = fileUtil.read("movingAverage\\" + s.getSystemCode() + ".json");
+            jsonObject = JSON.parseObject(value);
             for(SecuritiesMarket securitiesMarket : securitiesMarkets){
                 d.add(sdf.format(securitiesMarket.getTradeDate()));
-//                day.add(Double.valueOf(securitiesMarket.getClosingPrice()));//收盘价
+                day.add(Double.valueOf(securitiesMarket.getClosingPrice()));//收盘价
 //                h.add(null == securitiesMarket.getTurnoverRate() ? 0 : Double.valueOf(securitiesMarket.getTurnoverRate()));//换手率
 //                zf.add(null == securitiesMarket.getAmplitude() ? 0 : Double.valueOf(securitiesMarket.getAmplitude()));//振幅
 //                zdl.add(null == securitiesMarket.getRiseFallRatio() ? 0 : Double.valueOf(securitiesMarket.getRiseFallRatio()));//涨跌率
@@ -644,27 +567,23 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                 if(!StringUtils.hasLength(startTime) && y == y1){
                     startTime = sdf.format(securitiesMarket.getTradeDate());
                 }
-//                Double week = getAvgClosingPrice(jsonObject, securitiesMarket.getTradeDate(), 5);
-//                weeks.add(week);
-//
-//                Double halfMonth = getAvgClosingPrice(jsonObject, securitiesMarket.getTradeDate(), 15);
-//                halfMonths.add(halfMonth);
-//
-//                Double month = getAvgClosingPrice(jsonObject, securitiesMarket.getTradeDate(), 30);
-//                months.add(month);
-//
-//                Double quarter = getAvgClosingPrice(jsonObject, securitiesMarket.getTradeDate(), 90);
-//                quarters.add(quarter);
-//
-//                Double yy = getAvgClosingPrice(jsonObject, securitiesMarket.getTradeDate(), 365);
-//                years.add(yy);
+                Double week = getAvgClosingPrice(jsonObject, securitiesMarket.getTradeDate(), 5);
+                weeks.add(week);
 
-                if(Double.valueOf(securitiesMarket.getRiseFallPrice()) > 0){
-                    total = new BigDecimal(securitiesMarket.getTurnoverRate());
-                }else{
-                    total = new BigDecimal(securitiesMarket.getTurnoverRate()).multiply(new BigDecimal(-1));
-                }
-                cs1.add(total.doubleValue());
+                Double halfMonth = getAvgClosingPrice(jsonObject, securitiesMarket.getTradeDate(), 15);
+                halfMonths.add(halfMonth);
+
+                Double month = getAvgClosingPrice(jsonObject, securitiesMarket.getTradeDate(), 30);
+                months.add(month);
+
+                Double quarter = getAvgClosingPrice(jsonObject, securitiesMarket.getTradeDate(), 90);
+                quarters.add(quarter);
+
+                Double yy = getAvgClosingPrice(jsonObject, securitiesMarket.getTradeDate(), 365);
+                years.add(yy);
+
+//                BigDecimal divide = new BigDecimal(securitiesMarket.getTopPrice()).subtract(new BigDecimal(securitiesMarket.getLowestPrice())).divide(new BigDecimal(securitiesMarket.getTopPrice()), new MathContext(2, RoundingMode.HALF_EVEN)).multiply(new BigDecimal(100));
+//                cs2.add(divide.doubleValue());
             }
             d.add(sdf.format(new Date(System.currentTimeMillis() + (2 * 24 * 60 * 60 * 1000))));
             map.put("id", s.getId());
@@ -721,7 +640,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
         if(null == jsonObject){
             return 0D;
         }
-        JSONArray movingAverage = jsonObject.getJSONArray("movingAverage_" + day);
+        JSONArray movingAverage = jsonObject.getJSONArray("m_avg_" + day);
         for(int i = 0; i < movingAverage.size(); i++){
             JSONObject object = movingAverage.getJSONObject(i);
             Long d = object.getLong("day");
@@ -831,7 +750,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                             }
                             ids.add(s.getId());
                             redisUtil.setStrValue("securitiesId", JSON.toJSONString(ids));
-                            Thread.sleep(new Random().nextInt(10) * 1000);//暂停60内随机秒，防止因频繁调用被限制IP
+//                            Thread.sleep(new Random().nextInt(10) * 1000);//暂停10内随机秒，防止因频繁调用被限制IP
                         }
 
                         //检测所有数据是否已处理完
@@ -1050,16 +969,15 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
         List<Securities> list1 = list;
         CacheUtil.securities = new ArrayList<>();
         number = 0;
-        threadNum = list1.size() % 100 != 0 ? (list1.size() / 100) + 1 : list1.size() / 100;
         if(null == list1){
             list1 = securitiesMapper.querySecuritiesList(null, null);
         }
+        threadNum = list1.size() % 50 != 0 ? (list1.size() / 50) + 1 : list1.size() / 50;
         SimpleDateFormat sdf_ = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        System.err.println(sdf_.format(new Date()) + "------检查历史数据任务开始。");
-        int num = list1.size() / (threadNum - 1);
+        System.err.println(sdf_.format(new Date()) + "------检查历史数据任务开始。线程数--" + threadNum);
         for(int n = 0; n < threadNum; n++){
-            int start = n * num;
-            int end = (n + 1) * num;
+            int start = n * 50;
+            int end = (n + 1) * 50;
             if(n == (threadNum - 1)){
                 end = list1.size();
             }
@@ -1100,7 +1018,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                                 }
                             }
                             number++;
-                            Thread.sleep(new Random().nextInt(10) * 1000);//暂停10内随机秒，防止因频繁调用被限制IP
+//                            Thread.sleep(new Random().nextInt(10) * 1000);//暂停10内随机秒，防止因频繁调用被限制IP
                         }
                         threadNum--;
                         if(number != finalList.size() && threadNum == 0){//所有线程处理完成，但是任务没有处理完
@@ -1110,6 +1028,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                             System.err.println(sdf_.format(new Date()) + "------检查历史数据任务结束。");
                         }
                     }catch (Exception e){
+                        e.printStackTrace();
                         CacheUtil.securities.addAll(securities.subList(index, securities.size()));
                     }
                 }
