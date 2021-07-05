@@ -31,9 +31,9 @@ public class TestController {
 
     @ResponseBody
     @PostMapping("/queryAllData")
-    public ResultUtil queryAllData(String code, Integer securitiesCategoryId, String date, Integer pageNo, Integer pageSize){
+    public ResultUtil queryAllData(String code, Integer securitiesCategoryId, Integer pageNo, Integer pageSize){
         try {
-            List<Map<String, Object>> list = securitiesMarketService.queryAllData(code, securitiesCategoryId, date, pageNo, pageSize);
+            List<Map<String, Object>> list = securitiesMarketService.queryAllData(code, securitiesCategoryId, pageNo, pageSize);
             return ResultUtil.success(list);
         }catch (Exception e){
             e.printStackTrace();

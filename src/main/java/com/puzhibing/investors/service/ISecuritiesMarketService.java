@@ -20,11 +20,10 @@ public interface ISecuritiesMarketService {
     /**
      * 获取指定日期范围内的数据
      * @param code
-     * @param date
      * @return
      * @throws Exception
      */
-    List<Map<String, Object>> queryAllData(String code, Integer securitiesCategoryId, String date, Integer pageNo, Integer pageSize) throws Exception;
+    List<Map<String, Object>> queryAllData(String code, Integer securitiesCategoryId, Integer pageNo, Integer pageSize) throws Exception;
 
 
 

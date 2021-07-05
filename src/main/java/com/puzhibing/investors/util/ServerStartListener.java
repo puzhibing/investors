@@ -28,7 +28,7 @@ public class ServerStartListener implements ServletContextListener {
             /**
              * 初始化数据到缓存中
              */
-            securitiesMarketService.initMarketToCache();
+//            securitiesMarketService.initMarketToCache();
 //            securitiesMarketService.checkHistoricalMarketData(null);
         } catch (Exception e) {
             e.printStackTrace();

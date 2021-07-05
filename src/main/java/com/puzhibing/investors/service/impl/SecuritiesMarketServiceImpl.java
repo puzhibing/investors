@@ -509,98 +509,41 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
     /**
      * 获取指定时间范围内的数据
      * @param code
-     * @param date
      * @return
      * @throws Exception
      */
     @Override
-    public List<Map<String, Object>> queryAllData(String code, Integer securitiesCategoryId, String date, Integer pageNo, Integer pageSize) throws Exception {
-        Date start = null;
-        Date end = null;
+    public List<Map<String, Object>> queryAllData(String code, Integer securitiesCategoryId, Integer pageNo, Integer pageSize) throws Exception {
         pageNo = (pageNo - 1) * pageSize;
-        if(!"".equals(date) && null != date){
-            String[] split = date.split(" - ");
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            start = sdf.parse(split[0] + " 00:00:00");
-            end = sdf.parse(split[1] + " 23:59:59");
-        }
         List<Securities> securities = securitiesMapper.queryList(code, securitiesCategoryId, pageNo, pageSize);
         List<Map<String, Object>> list = new ArrayList<>();
-        SimpleDateFormat sdf = new SimpleDateFormat("yyy-MM-dd");
         SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy");
-        int y = Integer.valueOf(sdf1.format(new Date())) - 0;
+        String y = sdf1.format(new Date());
         for(Securities s : securities){
             Map<String, Object> map = new HashMap<>();
             map.put("name", s.getName() + "(" + s.getCode() + ")");
-            List<String> d = new ArrayList<>();//日期
-            List<Double> day = new ArrayList<>();//1天收盘价
-            List<Double> h = new ArrayList<>();//换手率
-            List<Double> weeks = new ArrayList<>();//5天移动平均值
-            List<Double> halfMonths = new ArrayList<>();//15天移动平均值
-            List<Double> months = new ArrayList<>();//30天移动平均值
-            List<Double> quarters = new ArrayList<>();//90天移动平均值
-            List<Double> years = new ArrayList<>();//365天移动平均值
-            List<Double> zf = new ArrayList<>();//振幅
-            List<Double> zdl = new ArrayList<>();//涨跌率
-            List<Double> cs1 = new ArrayList<>();//测试1
-            List<Double> cs2 = new ArrayList<>();//测试2
             String startTime = "";
-            String value = fileUtil.read("market\\" + s.getSystemCode() + ".json");
+            String value = fileUtil.read("movingAverage\\" + s.getSystemCode() + ".json");
             JSONObject jsonObject = JSON.parseObject(value);
-            List<SecuritiesMarket> securitiesMarkets = queryList(jsonObject, start, end);
-            for(int i = 0; i < securitiesMarkets.size(); i++){
-                SecuritiesMarket now = securitiesMarkets.get(i);
-            }
-            BigDecimal total = new BigDecimal(0);
-
-            value = fileUtil.read("movingAverage\\" + s.getSystemCode() + ".json");
-            jsonObject = JSON.parseObject(value);
-            for(SecuritiesMarket securitiesMarket : securitiesMarkets){
-                d.add(sdf.format(securitiesMarket.getTradeDate()));
-                day.add(Double.valueOf(securitiesMarket.getClosingPrice()));//收盘价
-//                h.add(null == securitiesMarket.getTurnoverRate() ? 0 : Double.valueOf(securitiesMarket.getTurnoverRate()));//换手率
-//                zf.add(null == securitiesMarket.getAmplitude() ? 0 : Double.valueOf(securitiesMarket.getAmplitude()));//振幅
-//                zdl.add(null == securitiesMarket.getRiseFallRatio() ? 0 : Double.valueOf(securitiesMarket.getRiseFallRatio()));//涨跌率
-
-
-                int y1 = Integer.valueOf(sdf1.format(securitiesMarket.getTradeDate())).intValue();
-                if(!StringUtils.hasLength(startTime) && y == y1){
-                    startTime = sdf.format(securitiesMarket.getTradeDate());
+            JSONArray date = jsonObject.getJSONArray("date");
+            for (int i = date.size() - 1; i >= 0; i--){
+                String string = date.getString(i);
+                if(!y.equals(string.substring(0, string.indexOf("-")))){
+                    startTime = date.getString(i + 1);
+                    break;
                 }
-                Double week = getAvgClosingPrice(jsonObject, securitiesMarket.getTradeDate(), 5);
-                weeks.add(week);
-
-                Double halfMonth = getAvgClosingPrice(jsonObject, securitiesMarket.getTradeDate(), 15);
-                halfMonths.add(halfMonth);
-
-                Double month = getAvgClosingPrice(jsonObject, securitiesMarket.getTradeDate(), 30);
-                months.add(month);
-
-                Double quarter = getAvgClosingPrice(jsonObject, securitiesMarket.getTradeDate(), 90);
-                quarters.add(quarter);
-
-                Double yy = getAvgClosingPrice(jsonObject, securitiesMarket.getTradeDate(), 365);
-                years.add(yy);
-
-//                BigDecimal divide = new BigDecimal(securitiesMarket.getTopPrice()).subtract(new BigDecimal(securitiesMarket.getLowestPrice())).divide(new BigDecimal(securitiesMarket.getTopPrice()), new MathContext(2, RoundingMode.HALF_EVEN)).multiply(new BigDecimal(100));
-//                cs2.add(divide.doubleValue());
             }
-            d.add(sdf.format(new Date(System.currentTimeMillis() + (2 * 24 * 60 * 60 * 1000))));
+
             map.put("id", s.getId());
             map.put("systemCode", s.getSystemCode());
-            map.put("latitude", d);
-            map.put("closingPrice", day);
-            map.put("turnoverRate", h);
-            map.put("weekAvgClosingPrice", weeks);
-            map.put("halfMonthAvgClosingPrice", halfMonths);
-            map.put("monthAvgClosingPrice", months);
-            map.put("quarterAvgClosingPrice", quarters);
-            map.put("yearAvgClosingPrice", years);
+            map.put("latitude", jsonObject.getJSONArray("date"));
+            map.put("closingPrice", jsonObject.getJSONArray("m_avg_0"));
+            map.put("weekAvgClosingPrice", jsonObject.getJSONArray("m_avg_5"));
+            map.put("halfMonthAvgClosingPrice", jsonObject.getJSONArray("m_avg_15"));
+            map.put("monthAvgClosingPrice", jsonObject.getJSONArray("m_avg_30"));
+            map.put("quarterAvgClosingPrice", jsonObject.getJSONArray("m_avg_90"));
+            map.put("yearAvgClosingPrice", jsonObject.getJSONArray("m_avg_365"));
             map.put("startTime", startTime);
-            map.put("zf", zf);
-            map.put("zdl", zdl);
-            map.put("cs1", cs1);
-            map.put("cs2", cs2);
             list.add(map);
             break;// TODO: 2021/5/19 先查询一条数据
         }

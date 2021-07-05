@@ -27,12 +27,6 @@
                     </div>
                 </div>
                 <div class="layui-inline">
-                    <label class="layui-form-label">日期选择</label>
-                    <div class="layui-input-block">
-                        <input type="text" name="tradeDate" id="tradeDate" autocomplete="off" class="layui-input">
-                    </div>
-                </div>
-                <div class="layui-inline">
                     <div class="layui-input-block">
                         <button type="submit" class="layui-btn" lay-submit="" lay-filter="demo1" onclick="getAllData(2)">立即提交</button>
                         <button type="reset" class="layui-btn layui-btn-primary">重置</button>
@@ -52,19 +46,13 @@
 <script type="text/javascript">
     var pageNo = 1;
     var pageSize = 10;
-    var path = "http://127.0.0.1:8080";
+    var path = "http://127.0.0.1:8888";
 
     var form,layer,laydate;
     layui.use(['form', 'laydate'], function() {
         form = layui.form;
         layer = layui.layer;
         laydate = layui.laydate;
-
-        //日期
-        laydate.render({
-            elem: '#tradeDate'
-            ,range: true
-        });
 
         // getAllData(1);
     });
@@ -155,16 +143,11 @@
             var id = data[i].id;
             var latitude = data[i].latitude;
             var closingPrice = data[i].closingPrice;
-            var turnoverRate = data[i].turnoverRate;
             var weekAvgClosingPrice = data[i].weekAvgClosingPrice;
             var halfMonthAvgClosingPrice = data[i].halfMonthAvgClosingPrice;
             var monthAvgClosingPrice = data[i].monthAvgClosingPrice;
             var quarterAvgClosingPrice = data[i].quarterAvgClosingPrice;
             var yearAvgClosingPrice = data[i].yearAvgClosingPrice;
-            var zf = data[i].zf;
-            var zdl = data[i].zdl;
-            var cs1 = data[i].cs1;
-            var cs2 = data[i].cs2;
             var name = data[i].name;
             var startTime = data[i].startTime;
             // 基于准备好的dom，初始化echarts实例
@@ -192,8 +175,7 @@
                     }
                 },
                 legend: {
-                    // data: ['收盘价', '换手率', '5日移动平均', '15日移动平均', '30日移动平均', '90日移动平均', '365日移动平均']
-                    data: ['基数', '平均', '最大']
+                    data: ['收盘价', '5日移动平均', '15日移动平均', '30日移动平均', '90日移动平均', '365日移动平均']
                 },
                 grid: {
                     left: '3%',
@@ -233,15 +215,15 @@
                 },
                 series: [
                     {
-                        name: '基数',
+                        name: '收盘价',
                         data: closingPrice,
                         type: 'line',
                         showSymbol: false,
                         itemStyle:{
-                            color: '#DB3462',
+                            color: '#5B7AD7',
                         },
                         lineStyle: {
-                            color: '#DB3462',
+                            color: '#5B7AD7',
                             width: 1
                         },
                         markPoint: {
@@ -257,84 +239,14 @@
                         // }
                     },
                     {
-                        name: '平均',
-                        data: cs1,
-                        type: 'line',
-                        showSymbol: false,
-                        lineStyle: {
-                            width: 1
-                        },
-                        // markPoint: {
-                        //     data: [
-                        //         {type: 'max', name: '最大值'},
-                        //         {type: 'min', name: '最小值'}
-                        //     ]
-                        // },
-                        // markLine: {
-                        //     data: [
-                        //         {type: 'average', name: '平均值'}
-                        //     ]
-                        // }
-                    },
-                    {
-                        name: '最大',
-                        data: cs2,
-                        type: 'line',
-                        showSymbol: false,
-                        lineStyle: {
-                            width: 1
-                        },
-                        // markPoint: {
-                        //     data: [
-                        //         {type: 'max', name: '最大值'},
-                        //         {type: 'min', name: '最小值'}
-                        //     ]
-                        // },
-                        // markLine: {
-                        //     data: [
-                        //         {type: 'average', name: '平均值'}
-                        //     ]
-                        // }
-                    },
-                //     {
-                //         name: '振幅',
-                //         data: zf,
-                //         type: 'line',
-                //         showSymbol: false,
-                //         // markPoint: {
-                //         //     data: [
-                //         //         {type: 'max', name: '最大值'},
-                //         //         {type: 'min', name: '最小值'}
-                //         //     ]
-                //         // },
-                //         markLine: {
-                //             data: [
-                //                 {type: 'average', name: '平均值'}
-                //             ]
-                //         }
-                //     },
-                //     {
-                //         name: '涨跌率',
-                //         data: zdl,
-                //         type: 'line',
-                //         showSymbol: false,
-                //         // markPoint: {
-                //         //     data: [
-                //         //         {type: 'max', name: '最大值'},
-                //         //         {type: 'min', name: '最小值'}
-                //         //     ]
-                //         // },
-                //         markLine: {
-                //             data: [
-                //                 {type: 'average', name: '平均值'}
-                //             ]
-                //         }
-                //     },
-                    {
                         name: '5日移动平均',
                         data: weekAvgClosingPrice,
                         type: 'line',
+                        itemStyle:{
+                            color: '#A4E187',
+                        },
                         lineStyle: {
+                            color: '#A4E187',
                             width: 1
                         },
                         showSymbol: false,
@@ -343,7 +255,11 @@
                         name: '15日移动平均',
                         data: halfMonthAvgClosingPrice,
                         type: 'line',
+                        itemStyle:{
+                            color: '#FDD767',
+                        },
                         lineStyle: {
+                            color: '#FDD767',
                             width: 1
                         },
                         showSymbol: false,
@@ -352,7 +268,11 @@
                         name: '30日移动平均',
                         data: monthAvgClosingPrice,
                         type: 'line',
+                        itemStyle:{
+                            color: '#DB3462',
+                        },
                         lineStyle: {
+                            color: '#DB3462',
                             width: 1
                         },
                         showSymbol: false,
@@ -361,7 +281,11 @@
                         name: '90日移动平均',
                         data: quarterAvgClosingPrice,
                         type: 'line',
+                        itemStyle:{
+                            color: '#73C0DE',
+                        },
                         lineStyle: {
+                            color: '#73C0DE',
                             width: 1
                         },
                         showSymbol: false,
@@ -370,7 +294,11 @@
                         name: '365日移动平均',
                         data: yearAvgClosingPrice,
                         type: 'line',
+                        itemStyle:{
+                            color: '#3BA272',
+                        },
                         lineStyle: {
+                            color: '#3BA272',
                             width: 1
                         },
                         showSymbol: false,
