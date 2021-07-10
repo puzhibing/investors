@@ -51,7 +51,7 @@ public class TaskUtil {
     /**
      * 每天的16点执行的任务
      */
-    @Scheduled(cron = "0 0 16 * * *")
+    @Scheduled(cron = "0 30 16 * * *")
     public void taskDay17(){
         try {
             securitiesMarketService.pullSecuritiesMarket();

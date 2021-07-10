@@ -5,7 +5,6 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.puzhibing.investors.dao.*;
 import com.puzhibing.investors.pojo.*;
-import com.puzhibing.investors.pojo.vo.MarketMovingAverageVo;
 import com.puzhibing.investors.pojo.vo.SecuritiesMarketVo;
 import com.puzhibing.investors.service.*;
 import com.puzhibing.investors.util.*;
@@ -67,81 +66,16 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                SimpleDateFormat sdf_ = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                System.err.println(sdf_.format(new Date()) + "------更新上证A股日行情数据任务开始。");
                 try {
-                    /**
-                     * 获取【上海证券交易所A股日行情】数据
-                     */
-                    String urlSHA = "http://yunhq.sse.com.cn:32041//v1/sh1/list/exchange/ashare?select=code%2Cname%2Copen%2C" +
-                            "high%2Clow%2Clast%2Cprev_close%2Cchg_rate%2Cvolume%2Camount%2Ctradephase%2Cchange%2Camp_rate%2C" +
-                            "cpxxsubtype%2Ccpxxprodusta&begin=0&end=" + pageSize;
-                    Map<String, String> header = new HashMap<>();
-                    header.put("Accept", "*/*");
-                    header.put("Accept-Encoding", "gzip, deflate");
-                    header.put("Accept-Language", "zh-CN,zh;q=0.9");
-                    header.put("Cache-Control", "no-cache");
-                    header.put("Connection", "keep-alive");
-                    header.put("Host", "query.sse.com.cn");
-                    header.put("Pragma", "no-cache");
-                    header.put("Referer", "http://www.sse.com.cn/");
-                    header.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36");
-                    HttpResult httpResult = httpClientUtil.pushHttpRequset("GET", urlSHA, null, header, null);
-                    if(null == httpResult){
-                        System.err.println("数据请求异常");
-                    }
-                    if(httpResult.getCode() != 200){
-                        System.err.println(httpResult.getData());
-                    }
-                    JSONObject jsonObject = JSON.parseObject(httpResult.getData());
-                    String date = jsonObject.getString("date");
-                    JSONArray list = jsonObject.getJSONArray("list");
-                    SecuritiesCategory sh_a = securitiesCategoryService.queryByCode("sh_a");
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-                    for(int i = 0; i < list.size(); i++){
-                        JSONArray jsonArray = list.getJSONArray(i);
-                        String code = jsonArray.getString(0);
-                        String kpj = jsonArray.getString(2);//开盘价
-                        String zgj = jsonArray.getString(3);//最高价
-                        String zdj = jsonArray.getString(4);//最低价
-                        String spj = jsonArray.getString(5);//收盘价
-                        String sqspj = jsonArray.getString(6);//上期收盘价
-                        String zdl = jsonArray.getString(7);//涨跌率（%）
-                        String cjl = jsonArray.getString(8);//成交量（股）
-                        String cjje = jsonArray.getString(9);//成交金额（元）
-                        String zdje = jsonArray.getString(11);//涨跌金额
-                        String zfl = jsonArray.getString(12);//振幅率（%）
-
-
-                        Securities securities = securitiesMapper.queryByCodeAndSecuritiesCategory(code, sh_a.getId());
-                        if(null == securities){
-                            continue;
-                        }
-                        SecuritiesMarket securitiesMarket = new SecuritiesMarket();
-                        securitiesMarket.setSecuritiesId(securities.getId());
-                        securitiesMarket.setTradeDate(sdf.parse(date));
-                        securitiesMarket.setClosingPrice(spj);
-                        securitiesMarket.setRiseFallPrice(zdje);
-                        securitiesMarket.setRiseFallRatio(zdl);
-                        securitiesMarket.setOpeningPrice(kpj);
-                        securitiesMarket.setTopPrice(zgj);
-                        securitiesMarket.setLowestPrice(zdj);
-                        securitiesMarket.setAmplitude(zfl);
-                        securitiesMarket.setVolume(cjl);
-                        securitiesMarket.setDealAmount(cjje);
-                        securitiesMarket.setLastClosingPrice(sqspj);
-                        //计算换手率（成交量/流通股）
-                        String string = "0";
-                        if(null != securities.getFlowEquity() && securities.getFlowEquity() != 0){
-                            string = new BigDecimal(cjl).divide(new BigDecimal(securities.getFlowEquity()), new MathContext(2, RoundingMode.HALF_EVEN)).toString();
-                        }
-                        securitiesMarket.setTurnoverRate(string);
-                        saveMarketToFile(securities.getSystemCode(), securitiesMarket, securitiesMarket.getTradeDate());//保存数据到文件中
-                    }
-                    System.err.println(sdf_.format(new Date()) + "------更新上证A股日行情数据任务结束。");
-                    calculateMovingAverage("sh_a");
+                    sendSHA();
                 }catch (Exception e){
                     e.printStackTrace();
+                    try {
+                        Thread.sleep(10 * 60 * 1000);
+                        sendSHA();
+                    } catch (Exception e1) {
+                        e1.printStackTrace();
+                    }
                 }
             }
         }).start();
@@ -149,81 +83,16 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                SimpleDateFormat sdf_ = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                System.err.println(sdf_.format(new Date()) + "------更新上证B股日行情数据任务开始。");
                 try {
-                    /**
-                     * 获取【上海证券交易所B股日行情】数据
-                     */
-                    String urlSHB = "http://yunhq.sse.com.cn:32041//v1/sh1/list/exchange/bshare?select=code%2Cname%2Copen%2Chigh%2C" +
-                            "low%2Clast%2Cprev_close%2Cchg_rate%2Cvolume%2Camount%2Ctradephase%2Cchange%2Camp_rate%2Ccpxxsubtype%2C" +
-                            "cpxxprodusta&begin=0&end=" + pageSize;
-                    Map<String, String> header = new HashMap<>();
-                    header.put("Accept", "*/*");
-                    header.put("Accept-Encoding", "gzip, deflate");
-                    header.put("Accept-Language", "zh-CN,zh;q=0.9");
-                    header.put("Cache-Control", "no-cache");
-                    header.put("Connection", "keep-alive");
-                    header.put("Host", "query.sse.com.cn");
-                    header.put("Pragma", "no-cache");
-                    header.put("Referer", "http://www.sse.com.cn/");
-                    header.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36");
-                    HttpResult httpResult = httpClientUtil.pushHttpRequset("GET", urlSHB, null, header, null);
-                    if(null == httpResult){
-                        System.err.println("数据请求异常");
-                    }
-                    if(httpResult.getCode() != 200){
-                        System.err.println(httpResult.getData());
-                    }
-                    JSONObject jsonObject = JSON.parseObject(httpResult.getData());
-                    String date = jsonObject.getString("date");
-                    JSONArray list = jsonObject.getJSONArray("list");
-                    SecuritiesCategory sh_b = securitiesCategoryService.queryByCode("sh_b");
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-                    for(int i = 0; i < list.size(); i++){
-                        JSONArray jsonArray = list.getJSONArray(i);
-                        String code = jsonArray.getString(0);
-                        String kpj = jsonArray.getString(2);//开盘价
-                        String zgj = jsonArray.getString(3);//最高价
-                        String zdj = jsonArray.getString(4);//最低价
-                        String spj = jsonArray.getString(5);//收盘价
-                        String sqspj = jsonArray.getString(6);//上期收盘价
-                        String zdl = jsonArray.getString(7);//涨跌率（%）
-                        String cjl = jsonArray.getString(8);//成交量（股）
-                        String cjje = jsonArray.getString(9);//成交金额（元）
-                        String zdje = jsonArray.getString(11);//涨跌金额
-                        String zfl = jsonArray.getString(12);//振幅率（%）
-
-                        Securities securities = securitiesMapper.queryByCodeAndSecuritiesCategory(code, sh_b.getId());
-                        if(null == securities){
-                            continue;
-                        }
-                        SecuritiesMarket shbSecuritiesMarket = new SecuritiesMarket();
-                        shbSecuritiesMarket.setSecuritiesId(securities.getId());
-                        shbSecuritiesMarket.setTradeDate(sdf.parse(date));
-                        shbSecuritiesMarket.setClosingPrice(spj);
-                        shbSecuritiesMarket.setRiseFallPrice(zdje);
-                        shbSecuritiesMarket.setRiseFallRatio(zdl);
-                        shbSecuritiesMarket.setOpeningPrice(kpj);
-                        shbSecuritiesMarket.setTopPrice(zgj);
-                        shbSecuritiesMarket.setLowestPrice(zdj);
-                        shbSecuritiesMarket.setAmplitude(zfl);
-                        shbSecuritiesMarket.setVolume(cjl);
-                        shbSecuritiesMarket.setDealAmount(cjje);
-                        shbSecuritiesMarket.setLastClosingPrice(sqspj);
-                        //计算换手率（成交量/流通股）
-                        String string = "0";
-                        if(null != securities.getFlowEquity() && securities.getFlowEquity() != 0){
-                            string = new BigDecimal(cjl).divide(new BigDecimal(securities.getFlowEquity()), new MathContext(2, RoundingMode.HALF_EVEN)).toString();
-                        }
-                        shbSecuritiesMarket.setTurnoverRate(string);
-                        saveMarketToFile(securities.getSystemCode(), shbSecuritiesMarket, shbSecuritiesMarket.getTradeDate());//保存数据到文件中
-                    }
-                    System.err.println(sdf_.format(new Date()) + "------更新上证B股日行情数据任务结束。");
-
-                    calculateMovingAverage("sh_b");
+                    sendSHB();
                 }catch (Exception e){
                     e.printStackTrace();
+                    try {
+                        Thread.sleep(10 * 60 * 1000);
+                        sendSHB();
+                    } catch (Exception e1) {
+                        e1.printStackTrace();
+                    }
                 }
             }
         }).start();
@@ -231,108 +100,16 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                SimpleDateFormat sdf_ = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                System.err.println(sdf_.format(new Date()) + "------更新深证A股日行情数据任务开始。");
                 try {
-                    /**
-                     * 获取【深证证券交易所A股日行情】数据
-                     */
-                    SecuritiesCategory sz_a = securitiesCategoryService.queryByCode("sz_a");
-                    List<Securities> securities1 = securitiesMapper.queryList(null, sz_a.getId(), null, null);
-                    for(Securities securities : securities1){
-                        double random = Math.random();
-                        String urlSZ = "http://www.szse.cn/api/market/ssjjhq/getTimeData?random=" + random + "&marketId=1&code=" + securities.getCode();
-                        Map<String, String> header = new HashMap<>();
-                        header.put("Accept", "application/json, text/javascript, */*; q=0.01");
-                        header.put("Accept-Encoding", "gzip, deflate");
-                        header.put("Accept-Language", "zh-CN,zh;q=0.9");
-                        header.put("Cache-Control", "no-cache");
-                        header.put("Connection", "keep-alive");
-                        header.put("Content-Type", "application/json");
-                        header.put("Host", "www.szse.cn");
-                        header.put("Pragma", "no-cache");
-                        header.put("Referer", "http://www.szse.cn/market/trend/index.html");
-                        header.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36");
-                        header.put("X-Request-Type", "ajax");
-                        header.put("X-Requested-With", "XMLHttpRequest");
-                        HttpResult httpResult = httpClientUtil.pushHttpRequset("GET", urlSZ, null, header, null);
-                        if(null == httpResult){
-                            System.err.println("数据请求异常");
-                            continue;
-                        }
-                        if(httpResult.getCode() != 200){
-                            System.err.println(httpResult.getData());
-                            continue;
-                        }
-                        JSONObject jsonObject1 = JSON.parseObject(httpResult.getData());
-                        JSONObject jsonObject = jsonObject1.getJSONObject("data");
-                        SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-                        String datetime = jsonObject1.getString("datetime");
-                        String code = jsonObject.getString("code");
-                        String kpj = jsonObject.getString("open");//开盘价
-                        String zgj = jsonObject.getString("high");//最高价
-                        String zdj = jsonObject.getString("low");//最低价
-                        String spj = jsonObject.getString("now");//收盘价
-                        String sqspj = jsonObject.getString("close");//上期收盘价
-                        String zdl = jsonObject.getString("deltaPercent");//涨跌率（%）
-                        String cjl = jsonObject.getString("volume");//成交量（股）
-                        String cjje = jsonObject.getString("amount");//成交金额（元）
-                        String zdje = jsonObject.getString("delta");//涨跌金额
-                        String zfl = null;
-                        if(null == kpj){//停牌
-                            kpj = sqspj;//开盘价
-                            zgj = sqspj;//最高价
-                            zdj = sqspj;//最低价
-                            spj = sqspj;//收盘价
-                            zdl = "0";//涨跌率（%）
-                            cjl = "0";//成交量（股）
-                            cjje = "0";//成交金额（元）
-                            zdje = "0";//涨跌金额
-                            zfl = "0";//振幅率（%）
-                        }else{
-                            BigDecimal divide = new BigDecimal(Double.valueOf(zgj) - Double.valueOf(zdj)).multiply(new BigDecimal(100)).divide(new BigDecimal(sqspj), new MathContext(2, RoundingMode.HALF_EVEN));
-                            zfl = divide.toString();//振幅率（%）
-                        }
-                        JSONArray picdowndata = jsonObject.getJSONArray("picdowndata");
-                        Long inout = 0L;
-                        if(null != picdowndata){
-                            for(int i = 0; i < picdowndata.size(); i++){
-                                JSONArray jsonArray = picdowndata.getJSONArray(i);
-                                String time = jsonArray.getString(0);
-                                Integer num = jsonArray.getInteger(1);
-                                String direction = jsonArray.getString(2);
-                                inout = ("plus".equals(direction) ? (inout + num) : (inout - num));
-                            }
-                        }
-
-                        SecuritiesMarket szaSecuritiesMarket = new SecuritiesMarket();
-                        szaSecuritiesMarket.setSecuritiesId(securities.getId());
-                        szaSecuritiesMarket.setTradeDate(sdf1.parse(datetime));
-                        szaSecuritiesMarket.setClosingPrice(spj);
-                        szaSecuritiesMarket.setRiseFallPrice(zdje);
-                        szaSecuritiesMarket.setRiseFallRatio(zdl);
-                        szaSecuritiesMarket.setOpeningPrice(kpj);
-                        szaSecuritiesMarket.setTopPrice(zgj);
-                        szaSecuritiesMarket.setLowestPrice(zdj);
-                        szaSecuritiesMarket.setAmplitude(zfl);
-                        szaSecuritiesMarket.setVolume(cjl);
-                        szaSecuritiesMarket.setDealAmount(cjje);
-                        szaSecuritiesMarket.setLastClosingPrice(sqspj);
-                        //计算换手率（成交量/流通股）
-                        String string = "0";
-                        if(null != securities.getFlowEquity() && securities.getFlowEquity() != 0){
-                            string = new BigDecimal(cjl).divide(new BigDecimal(securities.getFlowEquity()), new MathContext(2, RoundingMode.HALF_EVEN)).toString();
-                        }
-                        szaSecuritiesMarket.setTurnoverRate(string);
-                        saveMarketToFile(securities.getSystemCode(), szaSecuritiesMarket, szaSecuritiesMarket.getTradeDate());//保存数据到文件中
-
-                        Thread.sleep(new Random().nextInt(10) * 1000);//暂停10内随机秒，防止因频繁调用被限制IP
-                    }
-                    System.err.println(sdf_.format(new Date()) + "------更新深证A股日行情数据任务结束。");
-
-                    calculateMovingAverage("sz_a");
+                    sendSZA();
                 }catch (Exception e){
                     e.printStackTrace();
+                    try {
+                        Thread.sleep(10 * 60 * 1000);
+                        sendSZA();
+                    } catch (Exception e1) {
+                        e1.printStackTrace();
+                    }
                 }
             }
         }).start();
@@ -341,109 +118,382 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                SimpleDateFormat sdf_ = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                System.err.println(sdf_.format(new Date()) + "------更新深证B股日行情数据任务开始。");
                 try {
-                    /**
-                     * 获取【深证证券交易所B股日行情】数据
-                     */
-                    SecuritiesCategory sz_b = securitiesCategoryService.queryByCode("sz_b");
-                    List<Securities> securities2 = securitiesMapper.queryList(null, sz_b.getId(), null, null);
-                    for(Securities securities : securities2){
-                        double random = Math.random();
-                        String urlSZ = "http://www.szse.cn/api/market/ssjjhq/getTimeData?random=" + random + "&marketId=1&code=" + securities.getCode();
-                        Map<String, String> header = new HashMap<>();
-                        header.put("Accept", "application/json, text/javascript, */*; q=0.01");
-                        header.put("Accept-Encoding", "gzip, deflate");
-                        header.put("Accept-Language", "zh-CN,zh;q=0.9");
-                        header.put("Cache-Control", "no-cache");
-                        header.put("Connection", "keep-alive");
-                        header.put("Content-Type", "application/json");
-                        header.put("Host", "www.szse.cn");
-                        header.put("Pragma", "no-cache");
-                        header.put("Referer", "http://www.szse.cn/market/trend/index.html");
-                        header.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36");
-                        header.put("X-Request-Type", "ajax");
-                        header.put("X-Requested-With", "XMLHttpRequest");
-                        HttpResult httpResult = httpClientUtil.pushHttpRequset("GET", urlSZ, null, header, null);
-                        if(null == httpResult){
-                            System.err.println("数据请求异常");
-                            continue;
-                        }
-                        if(httpResult.getCode() != 200){
-                            System.err.println(httpResult.getData());
-                            continue;
-                        }
-                        JSONObject jsonObject1 = JSON.parseObject(httpResult.getData());
-                        JSONObject jsonObject = jsonObject1.getJSONObject("data");
-                        SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-                        String datetime = jsonObject1.getString("datetime");
-                        String code = jsonObject.getString("code");
-                        String kpj = jsonObject.getString("open");//开盘价
-                        String zgj = jsonObject.getString("high");//最高价
-                        String zdj = jsonObject.getString("low");//最低价
-                        String spj = jsonObject.getString("now");//收盘价
-                        String sqspj = jsonObject.getString("close");//上期收盘价
-                        String zdl = jsonObject.getString("deltaPercent");//涨跌率（%）
-                        String cjl = jsonObject.getString("volume");//成交量（股）
-                        String cjje = jsonObject.getString("amount");//成交金额（元）
-                        String zdje = jsonObject.getString("delta");//涨跌金额
-                        String zfl = null;
-                        if(null == kpj){//停牌
-                            kpj = sqspj;//开盘价
-                            zgj = sqspj;//最高价
-                            zdj = sqspj;//最低价
-                            spj = sqspj;//收盘价
-                            zdl = "0";//涨跌率（%）
-                            cjl = "0";//成交量（股）
-                            cjje = "0";//成交金额（元）
-                            zdje = "0";//涨跌金额
-                            zfl = "0";//振幅率（%）
-                        }else{
-                            BigDecimal divide = new BigDecimal(Double.valueOf(zgj) - Double.valueOf(zdj)).multiply(new BigDecimal(100)).divide(new BigDecimal(sqspj), new MathContext(2, RoundingMode.HALF_EVEN));
-                            zfl = divide.toString();//振幅率（%）
-                        }
-                        JSONArray picdowndata = jsonObject.getJSONArray("picdowndata");
-                        Long inout = 0L;
-                        if(null != picdowndata){
-                            for(int i = 0; i < picdowndata.size(); i++){
-                                JSONArray jsonArray = picdowndata.getJSONArray(i);
-                                String time = jsonArray.getString(0);
-                                Integer num = jsonArray.getInteger(1);
-                                String direction = jsonArray.getString(2);
-                                inout = ("plus".equals(direction) ? (inout + num) : (inout - num));
-                            }
-                        }
-                        SecuritiesMarket szbSecuritiesMarket = new SecuritiesMarket();
-                        szbSecuritiesMarket.setSecuritiesId(securities.getId());
-                        szbSecuritiesMarket.setTradeDate(sdf1.parse(datetime));
-                        szbSecuritiesMarket.setClosingPrice(spj);
-                        szbSecuritiesMarket.setRiseFallPrice(zdje);
-                        szbSecuritiesMarket.setRiseFallRatio(zdl);
-                        szbSecuritiesMarket.setOpeningPrice(kpj);
-                        szbSecuritiesMarket.setTopPrice(zgj);
-                        szbSecuritiesMarket.setLowestPrice(zdj);
-                        szbSecuritiesMarket.setAmplitude(zfl);
-                        szbSecuritiesMarket.setVolume(cjl);
-                        szbSecuritiesMarket.setDealAmount(cjje);
-                        szbSecuritiesMarket.setLastClosingPrice(sqspj);
-                        String string = "0";
-                        if(null != securities.getFlowEquity() && securities.getFlowEquity() != 0){
-                            string = new BigDecimal(cjl).divide(new BigDecimal(securities.getFlowEquity()), new MathContext(2, RoundingMode.HALF_EVEN)).toString();
-                        }
-                        szbSecuritiesMarket.setTurnoverRate(string);
-                        saveMarketToFile(securities.getSystemCode(), szbSecuritiesMarket, szbSecuritiesMarket.getTradeDate());//保存数据到文件中
-
-                        Thread.sleep(new Random().nextInt(10) * 1000);//暂停10内随机秒，防止因频繁调用被限制IP
-                    }
-                    System.err.println(sdf_.format(new Date()) + "------更新深证B股日行情数据任务结束。");
-                    calculateMovingAverage("sz_b");
+                    sendSZB();
                 }catch (Exception e){
                     e.printStackTrace();
+                    try {
+                        Thread.sleep(10 * 60 * 1000);
+                        sendSZB();
+                    } catch (Exception e1) {
+                        e1.printStackTrace();
+                    }
                 }
             }
         }).start();
     }
+
+
+    public void sendSHA() throws Exception{
+        SimpleDateFormat sdf_ = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        System.err.println(sdf_.format(new Date()) + "------更新上证A股日行情数据任务开始。");
+        /**
+         * 获取【上海证券交易所A股日行情】数据
+         */
+        String urlSHA = "http://yunhq.sse.com.cn:32041//v1/sh1/list/exchange/ashare?select=code%2Cname%2Copen%2C" +
+                "high%2Clow%2Clast%2Cprev_close%2Cchg_rate%2Cvolume%2Camount%2Ctradephase%2Cchange%2Camp_rate%2C" +
+                "cpxxsubtype%2Ccpxxprodusta&begin=0&end=" + pageSize;
+        Map<String, String> header = new HashMap<>();
+        header.put("Accept", "*/*");
+        header.put("Accept-Encoding", "gzip, deflate");
+        header.put("Accept-Language", "zh-CN,zh;q=0.9");
+        header.put("Cache-Control", "no-cache");
+        header.put("Connection", "keep-alive");
+        header.put("Host", "query.sse.com.cn");
+        header.put("Pragma", "no-cache");
+        header.put("Referer", "http://www.sse.com.cn/");
+        header.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36");
+        HttpResult httpResult = httpClientUtil.pushHttpRequset("GET", urlSHA, null, header, null);
+        if(null == httpResult){
+            System.err.println("数据请求异常");
+        }
+        if(httpResult.getCode() != 200){
+            System.err.println(httpResult.getData());
+        }
+        JSONObject jsonObject = JSON.parseObject(httpResult.getData());
+        String date = jsonObject.getString("date");
+        JSONArray list = jsonObject.getJSONArray("list");
+        SecuritiesCategory sh_a = securitiesCategoryService.queryByCode("sh_a");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+        for(int i = 0; i < list.size(); i++){
+            JSONArray jsonArray = list.getJSONArray(i);
+            String code = jsonArray.getString(0);
+            String kpj = jsonArray.getString(2);//开盘价
+            String zgj = jsonArray.getString(3);//最高价
+            String zdj = jsonArray.getString(4);//最低价
+            String spj = jsonArray.getString(5);//收盘价
+            String sqspj = jsonArray.getString(6);//上期收盘价
+            String zdl = jsonArray.getString(7);//涨跌率（%）
+            String cjl = jsonArray.getString(8);//成交量（股）
+            String cjje = jsonArray.getString(9);//成交金额（元）
+            String zdje = jsonArray.getString(11);//涨跌金额
+            String zfl = jsonArray.getString(12);//振幅率（%）
+
+
+            Securities securities = securitiesMapper.queryByCodeAndSecuritiesCategory(code, sh_a.getId());
+            if(null == securities){
+                continue;
+            }
+            SecuritiesMarket securitiesMarket = new SecuritiesMarket();
+            securitiesMarket.setSecuritiesId(securities.getId());
+            securitiesMarket.setTradeDate(sdf.parse(date));
+            securitiesMarket.setClosingPrice(spj);
+            securitiesMarket.setRiseFallPrice(zdje);
+            securitiesMarket.setRiseFallRatio(zdl);
+            securitiesMarket.setOpeningPrice(kpj);
+            securitiesMarket.setTopPrice(zgj);
+            securitiesMarket.setLowestPrice(zdj);
+            securitiesMarket.setAmplitude(zfl);
+            securitiesMarket.setVolume(cjl);
+            securitiesMarket.setDealAmount(cjje);
+            securitiesMarket.setLastClosingPrice(sqspj);
+            //计算换手率（成交量/流通股）
+            String string = "0";
+            if(null != securities.getFlowEquity() && securities.getFlowEquity() != 0){
+                string = new BigDecimal(cjl).divide(new BigDecimal(securities.getFlowEquity()), new MathContext(2, RoundingMode.HALF_EVEN))
+                        .multiply(new BigDecimal(100)).toString();
+            }
+            securitiesMarket.setTurnoverRate(string);
+            saveMarketToFile(securities.getSystemCode(), securitiesMarket, securitiesMarket.getTradeDate());//保存数据到文件中
+        }
+        System.err.println(sdf_.format(new Date()) + "------更新上证A股日行情数据任务结束。");
+        calculateMovingAverage("sh_a");
+    }
+
+
+    public void sendSHB() throws Exception{
+        SimpleDateFormat sdf_ = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        System.err.println(sdf_.format(new Date()) + "------更新上证B股日行情数据任务开始。");
+        /**
+         * 获取【上海证券交易所B股日行情】数据
+         */
+        String urlSHB = "http://yunhq.sse.com.cn:32041//v1/sh1/list/exchange/bshare?select=code%2Cname%2Copen%2Chigh%2C" +
+                "low%2Clast%2Cprev_close%2Cchg_rate%2Cvolume%2Camount%2Ctradephase%2Cchange%2Camp_rate%2Ccpxxsubtype%2C" +
+                "cpxxprodusta&begin=0&end=" + pageSize;
+        Map<String, String> header = new HashMap<>();
+        header.put("Accept", "*/*");
+        header.put("Accept-Encoding", "gzip, deflate");
+        header.put("Accept-Language", "zh-CN,zh;q=0.9");
+        header.put("Cache-Control", "no-cache");
+        header.put("Connection", "keep-alive");
+        header.put("Host", "query.sse.com.cn");
+        header.put("Pragma", "no-cache");
+        header.put("Referer", "http://www.sse.com.cn/");
+        header.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36");
+        HttpResult httpResult = httpClientUtil.pushHttpRequset("GET", urlSHB, null, header, null);
+        if(null == httpResult){
+            System.err.println("数据请求异常");
+        }
+        if(httpResult.getCode() != 200){
+            System.err.println(httpResult.getData());
+        }
+        JSONObject jsonObject = JSON.parseObject(httpResult.getData());
+        String date = jsonObject.getString("date");
+        JSONArray list = jsonObject.getJSONArray("list");
+        SecuritiesCategory sh_b = securitiesCategoryService.queryByCode("sh_b");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+        for(int i = 0; i < list.size(); i++){
+            JSONArray jsonArray = list.getJSONArray(i);
+            String code = jsonArray.getString(0);
+            String kpj = jsonArray.getString(2);//开盘价
+            String zgj = jsonArray.getString(3);//最高价
+            String zdj = jsonArray.getString(4);//最低价
+            String spj = jsonArray.getString(5);//收盘价
+            String sqspj = jsonArray.getString(6);//上期收盘价
+            String zdl = jsonArray.getString(7);//涨跌率（%）
+            String cjl = jsonArray.getString(8);//成交量（股）
+            String cjje = jsonArray.getString(9);//成交金额（元）
+            String zdje = jsonArray.getString(11);//涨跌金额
+            String zfl = jsonArray.getString(12);//振幅率（%）
+
+            Securities securities = securitiesMapper.queryByCodeAndSecuritiesCategory(code, sh_b.getId());
+            if(null == securities){
+                continue;
+            }
+            SecuritiesMarket shbSecuritiesMarket = new SecuritiesMarket();
+            shbSecuritiesMarket.setSecuritiesId(securities.getId());
+            shbSecuritiesMarket.setTradeDate(sdf.parse(date));
+            shbSecuritiesMarket.setClosingPrice(spj);
+            shbSecuritiesMarket.setRiseFallPrice(zdje);
+            shbSecuritiesMarket.setRiseFallRatio(zdl);
+            shbSecuritiesMarket.setOpeningPrice(kpj);
+            shbSecuritiesMarket.setTopPrice(zgj);
+            shbSecuritiesMarket.setLowestPrice(zdj);
+            shbSecuritiesMarket.setAmplitude(zfl);
+            shbSecuritiesMarket.setVolume(cjl);
+            shbSecuritiesMarket.setDealAmount(cjje);
+            shbSecuritiesMarket.setLastClosingPrice(sqspj);
+            //计算换手率（成交量/流通股）
+            String string = "0";
+            if(null != securities.getFlowEquity() && securities.getFlowEquity() != 0){
+                string = new BigDecimal(cjl).divide(new BigDecimal(securities.getFlowEquity()), new MathContext(2, RoundingMode.HALF_EVEN))
+                        .multiply(new BigDecimal(100)).toString();
+            }
+            shbSecuritiesMarket.setTurnoverRate(string);
+            saveMarketToFile(securities.getSystemCode(), shbSecuritiesMarket, shbSecuritiesMarket.getTradeDate());//保存数据到文件中
+        }
+        System.err.println(sdf_.format(new Date()) + "------更新上证B股日行情数据任务结束。");
+
+        calculateMovingAverage("sh_b");
+    }
+
+
+
+    public void sendSZA() throws Exception{
+        SimpleDateFormat sdf_ = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        System.err.println(sdf_.format(new Date()) + "------更新深证A股日行情数据任务开始。");
+        /**
+         * 获取【深证证券交易所A股日行情】数据
+         */
+        SecuritiesCategory sz_a = securitiesCategoryService.queryByCode("sz_a");
+        List<Securities> securities1 = securitiesMapper.queryList(null, sz_a.getId(), null, null);
+        for(Securities securities : securities1){
+            double random = Math.random();
+            String urlSZ = "http://www.szse.cn/api/market/ssjjhq/getTimeData?random=" + random + "&marketId=1&code=" + securities.getCode();
+            Map<String, String> header = new HashMap<>();
+            header.put("Accept", "application/json, text/javascript, */*; q=0.01");
+            header.put("Accept-Encoding", "gzip, deflate");
+            header.put("Accept-Language", "zh-CN,zh;q=0.9");
+            header.put("Cache-Control", "no-cache");
+            header.put("Connection", "keep-alive");
+            header.put("Content-Type", "application/json");
+            header.put("Host", "www.szse.cn");
+            header.put("Pragma", "no-cache");
+            header.put("Referer", "http://www.szse.cn/market/trend/index.html");
+            header.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36");
+            header.put("X-Request-Type", "ajax");
+            header.put("X-Requested-With", "XMLHttpRequest");
+            HttpResult httpResult = httpClientUtil.pushHttpRequset("GET", urlSZ, null, header, null);
+            if(null == httpResult){
+                System.err.println("数据请求异常");
+                continue;
+            }
+            if(httpResult.getCode() != 200){
+                System.err.println(httpResult.getData());
+                continue;
+            }
+            JSONObject jsonObject1 = JSON.parseObject(httpResult.getData());
+            JSONObject jsonObject = jsonObject1.getJSONObject("data");
+            SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+            String datetime = jsonObject1.getString("datetime");
+            String code = jsonObject.getString("code");
+            String kpj = jsonObject.getString("open");//开盘价
+            String zgj = jsonObject.getString("high");//最高价
+            String zdj = jsonObject.getString("low");//最低价
+            String spj = jsonObject.getString("now");//收盘价
+            String sqspj = jsonObject.getString("close");//上期收盘价
+            String zdl = jsonObject.getString("deltaPercent");//涨跌率（%）
+            String cjl = jsonObject.getString("volume");//成交量（股）
+            String cjje = jsonObject.getString("amount");//成交金额（元）
+            String zdje = jsonObject.getString("delta");//涨跌金额
+            String zfl = null;
+            if(null == kpj){//停牌
+                kpj = sqspj;//开盘价
+                zgj = sqspj;//最高价
+                zdj = sqspj;//最低价
+                spj = sqspj;//收盘价
+                zdl = "0";//涨跌率（%）
+                cjl = "0";//成交量（股）
+                cjje = "0";//成交金额（元）
+                zdje = "0";//涨跌金额
+                zfl = "0";//振幅率（%）
+            }else{
+                BigDecimal divide = new BigDecimal(Double.valueOf(zgj) - Double.valueOf(zdj)).multiply(new BigDecimal(100)).divide(new BigDecimal(sqspj), new MathContext(2, RoundingMode.HALF_EVEN));
+                zfl = divide.toString();//振幅率（%）
+            }
+            JSONArray picdowndata = jsonObject.getJSONArray("picdowndata");
+            Long inout = 0L;
+            if(null != picdowndata){
+                for(int i = 0; i < picdowndata.size(); i++){
+                    JSONArray jsonArray = picdowndata.getJSONArray(i);
+                    String time = jsonArray.getString(0);
+                    Integer num = jsonArray.getInteger(1);
+                    String direction = jsonArray.getString(2);
+                    inout = ("plus".equals(direction) ? (inout + num) : (inout - num));
+                }
+            }
+
+            SecuritiesMarket szaSecuritiesMarket = new SecuritiesMarket();
+            szaSecuritiesMarket.setSecuritiesId(securities.getId());
+            szaSecuritiesMarket.setTradeDate(sdf1.parse(datetime));
+            szaSecuritiesMarket.setClosingPrice(spj);
+            szaSecuritiesMarket.setRiseFallPrice(zdje);
+            szaSecuritiesMarket.setRiseFallRatio(zdl);
+            szaSecuritiesMarket.setOpeningPrice(kpj);
+            szaSecuritiesMarket.setTopPrice(zgj);
+            szaSecuritiesMarket.setLowestPrice(zdj);
+            szaSecuritiesMarket.setAmplitude(zfl);
+            szaSecuritiesMarket.setVolume(cjl);
+            szaSecuritiesMarket.setDealAmount(cjje);
+            szaSecuritiesMarket.setLastClosingPrice(sqspj);
+            //计算换手率（成交量/流通股）
+            String string = "0";
+            if(null != securities.getFlowEquity() && securities.getFlowEquity() != 0){
+                string = new BigDecimal(cjl).divide(new BigDecimal(securities.getFlowEquity()), new MathContext(2, RoundingMode.HALF_EVEN))
+                        .multiply(new BigDecimal(100)).toString();
+            }
+            szaSecuritiesMarket.setTurnoverRate(string);
+            saveMarketToFile(securities.getSystemCode(), szaSecuritiesMarket, szaSecuritiesMarket.getTradeDate());//保存数据到文件中
+
+            Thread.sleep(new Random().nextInt(10) * 1000);//暂停10内随机秒，防止因频繁调用被限制IP
+        }
+        System.err.println(sdf_.format(new Date()) + "------更新深证A股日行情数据任务结束。");
+
+        calculateMovingAverage("sz_a");
+    }
+
+
+
+    public void sendSZB() throws Exception{
+        SimpleDateFormat sdf_ = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        System.err.println(sdf_.format(new Date()) + "------更新深证B股日行情数据任务开始。");
+        /**
+         * 获取【深证证券交易所B股日行情】数据
+         */
+        SecuritiesCategory sz_b = securitiesCategoryService.queryByCode("sz_b");
+        List<Securities> securities2 = securitiesMapper.queryList(null, sz_b.getId(), null, null);
+        for(Securities securities : securities2){
+            double random = Math.random();
+            String urlSZ = "http://www.szse.cn/api/market/ssjjhq/getTimeData?random=" + random + "&marketId=1&code=" + securities.getCode();
+            Map<String, String> header = new HashMap<>();
+            header.put("Accept", "application/json, text/javascript, */*; q=0.01");
+            header.put("Accept-Encoding", "gzip, deflate");
+            header.put("Accept-Language", "zh-CN,zh;q=0.9");
+            header.put("Cache-Control", "no-cache");
+            header.put("Connection", "keep-alive");
+            header.put("Content-Type", "application/json");
+            header.put("Host", "www.szse.cn");
+            header.put("Pragma", "no-cache");
+            header.put("Referer", "http://www.szse.cn/market/trend/index.html");
+            header.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36");
+            header.put("X-Request-Type", "ajax");
+            header.put("X-Requested-With", "XMLHttpRequest");
+            HttpResult httpResult = httpClientUtil.pushHttpRequset("GET", urlSZ, null, header, null);
+            if(null == httpResult){
+                System.err.println("数据请求异常");
+                continue;
+            }
+            if(httpResult.getCode() != 200){
+                System.err.println(httpResult.getData());
+                continue;
+            }
+            JSONObject jsonObject1 = JSON.parseObject(httpResult.getData());
+            JSONObject jsonObject = jsonObject1.getJSONObject("data");
+            SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+            String datetime = jsonObject1.getString("datetime");
+            String code = jsonObject.getString("code");
+            String kpj = jsonObject.getString("open");//开盘价
+            String zgj = jsonObject.getString("high");//最高价
+            String zdj = jsonObject.getString("low");//最低价
+            String spj = jsonObject.getString("now");//收盘价
+            String sqspj = jsonObject.getString("close");//上期收盘价
+            String zdl = jsonObject.getString("deltaPercent");//涨跌率（%）
+            String cjl = jsonObject.getString("volume");//成交量（股）
+            String cjje = jsonObject.getString("amount");//成交金额（元）
+            String zdje = jsonObject.getString("delta");//涨跌金额
+            String zfl = null;
+            if(null == kpj){//停牌
+                kpj = sqspj;//开盘价
+                zgj = sqspj;//最高价
+                zdj = sqspj;//最低价
+                spj = sqspj;//收盘价
+                zdl = "0";//涨跌率（%）
+                cjl = "0";//成交量（股）
+                cjje = "0";//成交金额（元）
+                zdje = "0";//涨跌金额
+                zfl = "0";//振幅率（%）
+            }else{
+                BigDecimal divide = new BigDecimal(Double.valueOf(zgj) - Double.valueOf(zdj)).multiply(new BigDecimal(100)).divide(new BigDecimal(sqspj), new MathContext(2, RoundingMode.HALF_EVEN));
+                zfl = divide.toString();//振幅率（%）
+            }
+            JSONArray picdowndata = jsonObject.getJSONArray("picdowndata");
+            Long inout = 0L;
+            if(null != picdowndata){
+                for(int i = 0; i < picdowndata.size(); i++){
+                    JSONArray jsonArray = picdowndata.getJSONArray(i);
+                    String time = jsonArray.getString(0);
+                    Integer num = jsonArray.getInteger(1);
+                    String direction = jsonArray.getString(2);
+                    inout = ("plus".equals(direction) ? (inout + num) : (inout - num));
+                }
+            }
+            SecuritiesMarket szbSecuritiesMarket = new SecuritiesMarket();
+            szbSecuritiesMarket.setSecuritiesId(securities.getId());
+            szbSecuritiesMarket.setTradeDate(sdf1.parse(datetime));
+            szbSecuritiesMarket.setClosingPrice(spj);
+            szbSecuritiesMarket.setRiseFallPrice(zdje);
+            szbSecuritiesMarket.setRiseFallRatio(zdl);
+            szbSecuritiesMarket.setOpeningPrice(kpj);
+            szbSecuritiesMarket.setTopPrice(zgj);
+            szbSecuritiesMarket.setLowestPrice(zdj);
+            szbSecuritiesMarket.setAmplitude(zfl);
+            szbSecuritiesMarket.setVolume(cjl);
+            szbSecuritiesMarket.setDealAmount(cjje);
+            szbSecuritiesMarket.setLastClosingPrice(sqspj);
+            String string = "0";
+            if(null != securities.getFlowEquity() && securities.getFlowEquity() != 0){
+                string = new BigDecimal(cjl).divide(new BigDecimal(securities.getFlowEquity()), new MathContext(2, RoundingMode.HALF_EVEN))
+                        .multiply(new BigDecimal(100)).toString();
+            }
+            szbSecuritiesMarket.setTurnoverRate(string);
+            saveMarketToFile(securities.getSystemCode(), szbSecuritiesMarket, szbSecuritiesMarket.getTradeDate());//保存数据到文件中
+
+            Thread.sleep(new Random().nextInt(10) * 1000);//暂停10内随机秒，防止因频繁调用被限制IP
+        }
+        System.err.println(sdf_.format(new Date()) + "------更新深证B股日行情数据任务结束。");
+        calculateMovingAverage("sz_b");
+    }
+
 
 
     /**
