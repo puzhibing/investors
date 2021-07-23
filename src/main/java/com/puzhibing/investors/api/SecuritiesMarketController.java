@@ -34,7 +34,7 @@ public class SecuritiesMarketController {
 
 
     /**
-     * 计算移动平均数据
+     * 计算移动平均成交数据
      * @return
      */
     @ResponseBody
@@ -51,6 +51,26 @@ public class SecuritiesMarketController {
             return ResultUtil.runErr();
         }
     }
+
+    /**
+     * 计算移动平均势能数据
+     * @return
+     */
+    @ResponseBody
+    @GetMapping("/potentialEnergyMovingAverage")
+    public ResultUtil potentialEnergyMovingAverage(){
+        try {
+            securitiesMarketService.potentialEnergyMovingAverage("sh_a");
+            securitiesMarketService.potentialEnergyMovingAverage("sh_b");
+            securitiesMarketService.potentialEnergyMovingAverage("sz_a");
+            securitiesMarketService.potentialEnergyMovingAverage("sz_b");
+            return ResultUtil.success();
+        }catch (Exception e){
+            e.printStackTrace();
+            return ResultUtil.runErr();
+        }
+    }
+
 
     /**
      * 获取当日行情数据

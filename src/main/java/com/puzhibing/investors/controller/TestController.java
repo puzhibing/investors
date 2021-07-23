@@ -23,18 +23,24 @@ public class TestController {
     private ISecuritiesMarketService securitiesMarketService;
 
     @GetMapping("")
-    public Object quertTestPage(){
+    public Object queryTestPage(){
         return "test.html";
+    }
+
+
+    @GetMapping("/info")
+    public Object queryInfoPage(){
+        return "info.html";
     }
 
 
 
     @ResponseBody
-    @PostMapping("/queryAllData")
-    public ResultUtil queryAllData(String code, Integer securitiesCategoryId, Integer pageNo, Integer pageSize){
+    @PostMapping("/queryMarkt")
+    public ResultUtil queryMarkt(String code){
         try {
-            List<Map<String, Object>> list = securitiesMarketService.queryAllData(code, securitiesCategoryId, pageNo, pageSize);
-            return ResultUtil.success(list);
+            Map<String, Object> map = securitiesMarketService.queryMarkt(code);
+            return ResultUtil.success(map);
         }catch (Exception e){
             e.printStackTrace();
             return ResultUtil.runErr();
@@ -43,10 +49,10 @@ public class TestController {
 
 
     @ResponseBody
-    @PostMapping("/profitAndLossOfQuantitative")
-    public ResultUtil profitAndLossOfQuantitative(String code, Integer securitiesCategoryId, String date, Integer pageNo, Integer pageSize){
+    @PostMapping("/queryPotentialEnergy")
+    public ResultUtil queryPotentialEnergy(String code){
         try {
-            List<Map<String, Object>> list = securitiesMarketService.profitAndLossOfQuantitative(code, securitiesCategoryId, date, pageNo, pageSize);
+            List<Map<String, Object>> list = securitiesMarketService.queryPotentialEnergy(code);
             return ResultUtil.success(list);
         }catch (Exception e){
             e.printStackTrace();

@@ -23,7 +23,17 @@ public interface ISecuritiesMarketService {
      * @return
      * @throws Exception
      */
-    List<Map<String, Object>> queryAllData(String code, Integer securitiesCategoryId, Integer pageNo, Integer pageSize) throws Exception;
+    List<Map<String, Object>> queryAllData(String code, Integer pageNo, Integer pageSize) throws Exception;
+
+
+
+    /**
+     * 获取行情数据
+     * @param code
+     * @return
+     * @throws Exception
+     */
+    Map<String, Object> queryMarkt(String code) throws Exception;
 
 
 
@@ -36,16 +46,11 @@ public interface ISecuritiesMarketService {
 
 
     /**
-     * 盈亏量化数据（增量式：v = d1 + (d1 + d2) + (d1 + d2 + d3) + ...）
+     *
      * @param code
-     * @param securitiesCategoryId
-     * @param date
-     * @param pageNo
-     * @param pageSize
-     * @return
      * @throws Exception
      */
-    List<Map<String, Object>> profitAndLossOfQuantitative(String code, Integer securitiesCategoryId, String date, Integer pageNo, Integer pageSize) throws Exception;
+    List<Map<String, Object>> queryPotentialEnergy(String code) throws Exception;
 
 
     /**
@@ -63,10 +68,18 @@ public interface ISecuritiesMarketService {
 
 
     /**
-     * 计算移动平均
+     * 计算移动平均成交数据
      * @throws Exception
      */
     void calculateMovingAverage(String securitiesCategoryCode) throws Exception;
+
+
+    /**
+     * 计算移动平均势能数据
+     * @param securitiesCategoryCode
+     * @throws Exception
+     */
+    void potentialEnergyMovingAverage(String securitiesCategoryCode) throws Exception;
 
 
     /**

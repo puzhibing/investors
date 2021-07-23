@@ -208,6 +208,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
         }
         System.err.println(sdf_.format(new Date()) + "------更新上证A股日行情数据任务结束。");
         calculateMovingAverage("sh_a");
+        potentialEnergyMovingAverage("sh_a");
     }
 
 
@@ -285,6 +286,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
         System.err.println(sdf_.format(new Date()) + "------更新上证B股日行情数据任务结束。");
 
         calculateMovingAverage("sh_b");
+        potentialEnergyMovingAverage("sh_b");
     }
 
 
@@ -390,6 +392,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
         System.err.println(sdf_.format(new Date()) + "------更新深证A股日行情数据任务结束。");
 
         calculateMovingAverage("sz_a");
+        potentialEnergyMovingAverage("sz_a");
     }
 
 
@@ -492,12 +495,13 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
         }
         System.err.println(sdf_.format(new Date()) + "------更新深证B股日行情数据任务结束。");
         calculateMovingAverage("sz_b");
+        potentialEnergyMovingAverage("sz_b");
     }
 
 
 
     /**
-     * 计算移动平均值并进行存储
+     * 计算移动平均成交值并进行存储
      * @param days
      * @throws Exception
      */
@@ -554,7 +558,64 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
 
 
 
+    /**
+     * 计算移动平均势能值并进行存储
+     * @param days
+     * @throws Exception
+     */
+    public void potentialEnergy(List<Integer> days, List<Securities> list) {
+        for(int m = 0; m < list.size(); m++){
+            Securities s = list.get(m);
+            try {
+                String value = fileUtil.read("market\\" + s.getSystemCode() + ".json");
+                if(!StringUtils.hasLength(value)){
+                    continue;
+                }
+                JSONObject jsonObject = JSON.parseObject(value);
+                List<SecuritiesMarketVo> market = jsonObject.getJSONArray("market").toJavaList(SecuritiesMarketVo.class);
+                Map<String, Object> map = new HashMap<>();
+                for(int i = 0; i < days.size(); i++){
+                    List<String> agr = new ArrayList<>();
+                    Integer d = days.get(i);//天数
+                    for(int j = 0; j < market.size(); j++){
+                        SecuritiesMarketVo object = market.get(j);
+                        Double avg = 0D;
+                        if(j > 0){
+                            avg = getAvgPotentialEnergy(market, object.getTradeDate(), d);
+                        }
+                        agr.add(avg.toString());
+                    }
+                    map.put("p_avg_" + d, agr);
+                }
 
+                List<String> date = new ArrayList<>();
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                for(int j = 0; j < market.size(); j++){
+                    SecuritiesMarketVo object = market.get(j);
+                    date.add(sdf.format(object.getTradeDate()));
+                }
+                map.put("date", date);
+
+                fileUtil.write("potentialEnergy\\" + s.getSystemCode() + ".json", JSON.toJSONString(map));
+            }catch (Exception e){
+                try {
+                    e.printStackTrace();
+                    System.out.println(s.getSystemCode() + "：" + e.getMessage());
+                    System.out.println(s.getSystemCode() + "：");
+
+                    JSONObject jsonObject = new JSONObject();
+                    List<SecuritiesMarketVo> securitiesMarketVos = queryHistoricalMatket(s);
+                    jsonObject.put("market", securitiesMarketVos);
+                    //处理完数据化保存到文件中
+                    fileUtil.write("market\\" + s.getSystemCode() + ".json", jsonObject.toJSONString());//写入
+                    m--;//重新对当前数据进行处理
+                    continue;
+                }catch (Exception e1){
+                    e1.printStackTrace();
+                }
+            }
+        }
+    }
 
     /**
      * 获取指定时间范围内的数据
@@ -563,9 +624,9 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
      * @throws Exception
      */
     @Override
-    public List<Map<String, Object>> queryAllData(String code, Integer securitiesCategoryId, Integer pageNo, Integer pageSize) throws Exception {
+    public List<Map<String, Object>> queryAllData(String code, Integer pageNo, Integer pageSize) throws Exception {
         pageNo = (pageNo - 1) * pageSize;
-        List<Securities> securities = securitiesMapper.queryList(code, securitiesCategoryId, pageNo, pageSize);
+        List<Securities> securities = securitiesMapper.queryList(code, null, pageNo, pageSize);
         List<Map<String, Object>> list = new ArrayList<>();
         SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy");
         String y = sdf1.format(new Date());
@@ -595,10 +656,44 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             map.put("yearAvgClosingPrice", jsonObject.getJSONArray("m_avg_365"));
             map.put("startTime", startTime);
             list.add(map);
-            break;// TODO: 2021/5/19 先查询一条数据
         }
         return list;
     }
+
+    @Override
+    public Map<String, Object> queryMarkt(String code) throws Exception {
+        List<Securities> securities = securitiesMapper.queryList(code, null, null, null);
+        SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy");
+        String y = sdf1.format(new Date());
+        Map<String, Object> map = new HashMap<>();
+        Securities s = securities.get(0);
+        if(null != s){
+            map.put("name", s.getName() + "(" + s.getCode() + ")");
+            String startTime = "";
+            String value = fileUtil.read("movingAverage\\" + s.getSystemCode() + ".json");
+            JSONObject jsonObject = JSON.parseObject(value);
+            JSONArray date = jsonObject.getJSONArray("date");
+            for (int i = date.size() - 1; i >= 0; i--){
+                String string = date.getString(i);
+                if(!y.equals(string.substring(0, string.indexOf("-")))){
+                    startTime = date.getString(i + 1);
+                    break;
+                }
+            }
+            map.put("id", s.getId());
+            map.put("systemCode", s.getSystemCode());
+            map.put("latitude", jsonObject.getJSONArray("date"));
+            map.put("closingPrice", jsonObject.getJSONArray("m_avg_0"));
+            map.put("weekAvgClosingPrice", jsonObject.getJSONArray("m_avg_5"));
+            map.put("halfMonthAvgClosingPrice", jsonObject.getJSONArray("m_avg_15"));
+            map.put("monthAvgClosingPrice", jsonObject.getJSONArray("m_avg_30"));
+            map.put("quarterAvgClosingPrice", jsonObject.getJSONArray("m_avg_90"));
+            map.put("yearAvgClosingPrice", jsonObject.getJSONArray("m_avg_365"));
+            map.put("startTime", startTime);
+        }
+        return map;
+    }
+
 
 
     public List<SecuritiesMarket> queryList(JSONObject jsonObject, Date start, Date end) throws Exception {
@@ -668,6 +763,42 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
         }
         return avg;
     }
+
+
+    public Double getAvgPotentialEnergy(List<SecuritiesMarketVo> market, Date date, Integer days) throws Exception{
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd");
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) - days);
+        Date start = sdf.parse((sdf1.format(calendar.getTime()) + " 00:00:00"));
+        Date end = sdf.parse((sdf1.format(date) + " 23:59:59"));
+        BigDecimal last = new BigDecimal(0);//上期收盘价总和
+        BigDecimal vs = new BigDecimal(0);//差价总和
+        int num = 0;//天数
+        for(SecuritiesMarketVo sm : market){
+            if(start.getTime() <= sm.getTradeDate().getTime() && end.getTime() >= sm.getTradeDate().getTime()){
+                BigDecimal lastClosingPrice = new BigDecimal(null == sm.getLastClosingPrice() ? "0" : sm.getLastClosingPrice());//上期收盘价
+                BigDecimal topPrice = new BigDecimal(null == sm.getTopPrice() ? "0" : sm.getTopPrice());//本日最高
+                BigDecimal lowestPrice = new BigDecimal(null == sm.getLowestPrice() ? "0" : sm.getLowestPrice());//本日最低
+                BigDecimal multiply = topPrice.subtract(lastClosingPrice).subtract(lastClosingPrice.subtract(lowestPrice));//v = (to - la) - (la - lo)
+                last = last.add(lastClosingPrice);
+                vs = vs.add(multiply);
+                num++;
+            }
+        }
+        Double avg = 0D;
+        if(num > 0){
+            BigDecimal nu = new BigDecimal(num);
+            BigDecimal divide = vs.divide(nu, new MathContext(4, RoundingMode.HALF_EVEN));
+            BigDecimal divide1 = last.divide(nu, new MathContext(4, RoundingMode.HALF_EVEN));
+            if(divide.doubleValue() != 0 && divide1.doubleValue() != 0){
+                avg = divide.divide(divide1, new MathContext(4, RoundingMode.HALF_EVEN)).multiply(new BigDecimal(100)).doubleValue();
+            }
+        }
+        return avg;
+    }
+
 
 
     /**
@@ -778,70 +909,48 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
 
 
     /**
-     * 盈亏量化数据（增量式：v = d1 + (d1 + d2) + (d1 + d2 + d3) + ...）
+     * 获取移动平均势能数据
      * @param code
-     * @param securitiesCategoryId
-     * @param date
-     * @param pageNo
-     * @param pageSize
      * @return
      * @throws Exception
      */
     @Override
-    public List<Map<String, Object>> profitAndLossOfQuantitative(String code, Integer securitiesCategoryId, String date, Integer pageNo, Integer pageSize) throws Exception {
-        Date start = null;
-        Date end = null;
-        pageNo = (pageNo - 1) * pageSize;
-        if(!"".equals(date) && null != date){
-            String[] split = date.split(" - ");
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            start = sdf.parse(split[0] + " 00:00:00");
-            end = sdf.parse(split[1] + " 23:59:59");
-        }
-        List<Securities> securities = securitiesMapper.queryList(code, securitiesCategoryId, pageNo, pageSize);
-        List<Map<String, Object>> list = new ArrayList<>();
-        SimpleDateFormat sdf = new SimpleDateFormat("yyy-MM-dd");
+    public List<Map<String, Object>> queryPotentialEnergy(String code) throws Exception {
+        List<Securities> securities = securitiesMapper.queryList(code, null, null, null);
         SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy");
-        int y = Integer.valueOf(sdf1.format(new Date())) - 4;
-        for(Securities s : securities){
-            Map<String, Object> map = new HashMap<>();
-            map.put("name", s.getName() + "(" + s.getCode() + ")");
-            List<String> d = new ArrayList<>();
-            List<Double> riseFallPrice = new ArrayList<>();
-            String startTime = "";
-            String value = redisUtil.getValue(s.getSystemCode());
-            JSONObject jsonObject = JSON.parseObject(value);
-            List<SecuritiesMarket> securitiesMarkets = queryList(jsonObject, start, end);
-            BigDecimal sh_a_v = new BigDecimal(0);
-            for(int i = 0; i < securitiesMarkets.size(); i++){
-                SecuritiesMarket securitiesMarket = securitiesMarkets.get(i);
+        String y = sdf1.format(new Date());
+        Securities s = securities.get(0);
+        List<Map<String, Object>> list = new ArrayList<>();
+        if(null != s){
+            int l = 1;
+            for(int i = 0; i < 10; i++){
                 if(i == 0){
-                    riseFallPrice.add(100D);
-                }else{
-                    SecuritiesMarket securitiesMarket1 = securitiesMarkets.get(i - 1);
-                    if(Long.valueOf(securitiesMarket1.getVolume()) == 0){
-                        riseFallPrice.add(0D);
-                    }else{
-                        riseFallPrice.add(new BigDecimal(Long.valueOf(securitiesMarket.getVolume()) / Long.valueOf(securitiesMarket1.getVolume())).setScale(2, RoundingMode.HALF_EVEN).doubleValue());
+                    l = 0;
+                }
+                if(l == 1){
+                    l++;
+                }
+                Map<String, Object> map = new HashMap<>();
+                map.put("name", "");
+                String startTime = "";
+                String value = fileUtil.read("potentialEnergy\\" + s.getSystemCode() + ".json");
+                JSONObject jsonObject = JSON.parseObject(value);
+                JSONArray date = jsonObject.getJSONArray("date");
+                for (int j = date.size() - 1; j >= 0; j--){
+                    String string = date.getString(j);
+                    if(!y.equals(string.substring(0, string.indexOf("-")))){
+                        startTime = date.getString(j + 1);
+                        break;
                     }
-
                 }
-
-
-                d.add(sdf.format(securitiesMarket.getTradeDate()));
-//                        sh_a_v = sh_a_v.add(new BigDecimal(securitiesMarket.getRiseFallPrice()));
-//                        riseFallPrice.add(sh_a_v.setScale(2, RoundingMode.HALF_EVEN).doubleValue());
-                int y1 = Integer.valueOf(sdf1.format(securitiesMarket.getTradeDate())).intValue();
-                if(!StringUtils.hasLength(startTime) && y == y1){
-                    startTime = sdf.format(securitiesMarket.getTradeDate());
-                }
+                map.put("id", l);
+                map.put("latitude", jsonObject.getJSONArray("date"));
+                map.put("value", jsonObject.getJSONArray("p_avg_" + l));
+                map.put("startTime", startTime);
+                list.add(map);
+                l++;
             }
-            map.put("id", s.getId());
-            map.put("latitude", d);
-            map.put("riseFallPrice", riseFallPrice);
-            map.put("startTime", startTime);
-            list.add(map);
-            break;// TODO: 2021/5/19 先查询一条数据
+
         }
         return list;
     }
@@ -1130,18 +1239,45 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
     }
 
 
-
+    /**
+     * 计算移动平均成交数据
+     * @param securitiesCategoryCode
+     */
     @Override
     public void calculateMovingAverage(String securitiesCategoryCode) {
         List<Securities> list = securitiesMapper.querySecuritiesList(null, securitiesCategoryCode);
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        System.err.println(sdf.format(new Date()) + "------计算移动平均数据开始");
+        System.err.println(sdf.format(new Date()) + "------计算移动平均成交数据开始");
         new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
                     SecuritiesMarketServiceImpl.this.movingAverage(Arrays.asList(0, 5, 15, 30, 90, 365), list);
-                    System.err.println(sdf.format(new Date()) + "------计算移动平均数据结束");
+                    System.err.println(sdf.format(new Date()) + "------计算移动平均成交数据结束");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+
+
+    /**
+     * 计算移动平均势能数据
+     * @param securitiesCategoryCode
+     * @throws Exception
+     */
+    @Override
+    public void potentialEnergyMovingAverage(String securitiesCategoryCode) throws Exception {
+        List<Securities> list = securitiesMapper.querySecuritiesList(null, securitiesCategoryCode);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        System.err.println(sdf.format(new Date()) + "------计算移动平均势能数据开始");
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    SecuritiesMarketServiceImpl.this.potentialEnergy(Arrays.asList(0, 2, 3, 4, 5, 6, 7, 8, 9, 10), list);
+                    System.err.println(sdf.format(new Date()) + "------计算移动平均势能数据结束");
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
