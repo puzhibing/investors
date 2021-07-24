@@ -1,6 +1,7 @@
 package com.puzhibing.investors.controller;
 
 
+import com.puzhibing.investors.pojo.vo.MarketMovingAverageVo;
 import com.puzhibing.investors.service.ISecuritiesMarketService;
 import com.puzhibing.investors.util.ResultUtil;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -79,6 +80,22 @@ public class TestController {
             out.close();
         }catch (Exception e){
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * 获取推荐证券数据
+     * @return
+     */
+    @ResponseBody
+    @GetMapping("/queryRecommendData")
+    public ResultUtil queryRecommendData(){
+        try {
+            List<MarketMovingAverageVo> list = securitiesMarketService.queryRecommendData(1, 10);
+            return ResultUtil.success(list);
+        }catch (Exception e){
+            e.printStackTrace();
+            return ResultUtil.runErr();
         }
     }
 }

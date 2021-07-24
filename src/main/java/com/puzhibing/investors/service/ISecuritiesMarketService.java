@@ -1,6 +1,7 @@
 package com.puzhibing.investors.service;
 
 import com.puzhibing.investors.pojo.Securities;
+import com.puzhibing.investors.pojo.vo.MarketMovingAverageVo;
 import com.puzhibing.investors.util.ResultUtil;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 
@@ -46,7 +47,7 @@ public interface ISecuritiesMarketService {
 
 
     /**
-     *
+     * 获取移动平均势能数据
      * @param code
      * @throws Exception
      */
@@ -89,4 +90,12 @@ public interface ISecuritiesMarketService {
      * @throws Exception
      */
     HSSFWorkbook exportMarket(String systemCode) throws Exception;
+
+
+    /**
+     * 获取推荐参考证券数据（移动平均成交数据交叉的数据）
+     * @return
+     * @throws Exception
+     */
+    List<MarketMovingAverageVo> queryRecommendData(Integer pageNo, Integer pageSize) throws Exception;
 }
