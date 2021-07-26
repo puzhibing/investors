@@ -54,7 +54,7 @@ public class TaskUtil {
     @Scheduled(cron = "0 30 16 * * *")
     public void taskDay17(){
         try {
-//            securitiesMarketService.pullSecuritiesMarket();
+            securitiesMarketService.pullSecuritiesMarket();
         }catch (Exception e){
             e.printStackTrace();
         }
