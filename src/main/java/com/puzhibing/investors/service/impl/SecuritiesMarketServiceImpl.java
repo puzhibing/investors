@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.puzhibing.investors.dao.*;
 import com.puzhibing.investors.pojo.*;
+import com.puzhibing.investors.pojo.vo.MarketMovingAverageVo;
 import com.puzhibing.investors.pojo.vo.SecuritiesMarketVo;
 import com.puzhibing.investors.service.*;
 import com.puzhibing.investors.util.*;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import javax.annotation.Resource;
+import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
@@ -663,23 +665,17 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
     @Override
     public Map<String, Object> queryMarkt(String code) throws Exception {
         List<Securities> securities = securitiesMapper.queryList(code, null, null, null);
-        SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy");
-        String y = sdf1.format(new Date());
         Map<String, Object> map = new HashMap<>();
+        if(securities.size() == 0){
+            return map;
+        }
         Securities s = securities.get(0);
         if(null != s){
             map.put("name", s.getName() + "(" + s.getCode() + ")");
-            String startTime = "";
             String value = fileUtil.read("movingAverage\\" + s.getSystemCode() + ".json");
             JSONObject jsonObject = JSON.parseObject(value);
             JSONArray date = jsonObject.getJSONArray("date");
-            for (int i = date.size() - 1; i >= 0; i--){
-                String string = date.getString(i);
-                if(!y.equals(string.substring(0, string.indexOf("-")))){
-                    startTime = date.getString(i + 1);
-                    break;
-                }
-            }
+            String startTime = date.get(date.size() - 90).toString();
             map.put("id", s.getId());
             map.put("systemCode", s.getSystemCode());
             map.put("latitude", jsonObject.getJSONArray("date"));
@@ -917,10 +913,11 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
     @Override
     public List<Map<String, Object>> queryPotentialEnergy(String code) throws Exception {
         List<Securities> securities = securitiesMapper.queryList(code, null, null, null);
-        SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy");
-        String y = sdf1.format(new Date());
-        Securities s = securities.get(0);
         List<Map<String, Object>> list = new ArrayList<>();
+        if(securities.size() == 0){
+            return list;
+        }
+        Securities s = securities.get(0);
         if(null != s){
             int l = 1;
             for(int i = 0; i < 10; i++){
@@ -932,17 +929,10 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                 }
                 Map<String, Object> map = new HashMap<>();
                 map.put("name", "");
-                String startTime = "";
                 String value = fileUtil.read("potentialEnergy\\" + s.getSystemCode() + ".json");
                 JSONObject jsonObject = JSON.parseObject(value);
                 JSONArray date = jsonObject.getJSONArray("date");
-                for (int j = date.size() - 1; j >= 0; j--){
-                    String string = date.getString(j);
-                    if(!y.equals(string.substring(0, string.indexOf("-")))){
-                        startTime = date.getString(j + 1);
-                        break;
-                    }
-                }
+                String startTime = date.get(date.size() - 90).toString();
                 map.put("id", l);
                 map.put("latitude", jsonObject.getJSONArray("date"));
                 map.put("value", jsonObject.getJSONArray("p_avg_" + l));
@@ -1335,5 +1325,40 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
         title.add("换手率（%）");
         titles.add(title);
         return excelUtil.writeDataToExcel(titles, lists);
+    }
+
+
+    /**
+     * 获取推荐参考证券数据（移动平均成交数据交叉的数据）
+     * @param pageNo
+     * @param pageSize
+     * @return
+     * @throws Exception
+     */
+    @Override
+    public List<MarketMovingAverageVo> queryRecommendData(Integer pageNo, Integer pageSize) throws Exception {
+        List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
+        List<MarketMovingAverageVo> list = new ArrayList<>();
+        for (Securities s : securities){
+            String value = fileUtil.read("movingAverage\\" + s.getSystemCode() + ".json");
+            JSONObject jsonObject = JSON.parseObject(value);
+            MarketMovingAverageVo marketMovingAverageVo = new MarketMovingAverageVo();
+            marketMovingAverageVo.setCode(s.getCode());
+            marketMovingAverageVo.setSystemCode(s.getSystemCode());
+            marketMovingAverageVo.setName(s.getName());
+            SecuritiesCategory securitiesCategory = securitiesCategoryService.selectById(s.getSecuritiesCategoryId());
+            marketMovingAverageVo.setSecuritiesCategory(securitiesCategory.getName());
+            JSONArray m_avg_0 = jsonObject.getJSONArray("m_avg_0");
+            marketMovingAverageVo.setPrice(m_avg_0.getDouble(m_avg_0.size() - 1));
+            JSONArray m_avg_5 = jsonObject.getJSONArray("m_avg_5");
+            marketMovingAverageVo.setFiveAveragePrice(m_avg_5.getDouble(m_avg_5.size() - 1));
+            JSONArray m_avg_15 = jsonObject.getJSONArray("m_avg_15");
+            marketMovingAverageVo.setFifteenAveragePrice(m_avg_15.getDouble(m_avg_15.size() - 1));
+            double v = new BigDecimal(marketMovingAverageVo.getPrice()).subtract(new BigDecimal(marketMovingAverageVo.getFifteenAveragePrice())).setScale(2, RoundingMode.HALF_EVEN).doubleValue();
+            marketMovingAverageVo.setDifference(v);
+            list.add(marketMovingAverageVo);
+        }
+        Collections.sort(list);
+        return list;
     }
 }
