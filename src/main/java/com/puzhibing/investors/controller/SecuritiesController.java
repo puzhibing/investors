@@ -1,7 +1,9 @@
 package com.puzhibing.investors.controller;
 
 
+import com.puzhibing.investors.pojo.SecuritiesCategory;
 import com.puzhibing.investors.pojo.vo.MarketMovingAverageVo;
+import com.puzhibing.investors.service.ISecuritiesCategoryService;
 import com.puzhibing.investors.service.ISecuritiesMarketService;
 import com.puzhibing.investors.util.ResultUtil;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -11,34 +13,51 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
+import javax.websocket.server.PathParam;
 import java.net.URLEncoder;
 import java.util.List;
 import java.util.Map;
 
 @Controller
 @CrossOrigin
-@RequestMapping("/test")
-public class TestController {
+@RequestMapping("/securities")
+public class SecuritiesController {
 
     @Autowired
     private ISecuritiesMarketService securitiesMarketService;
 
+    @Autowired
+    private ISecuritiesCategoryService securitiesCategoryService;
+
+    /**
+     * 跳转到列表页
+     * @return
+     */
     @GetMapping("")
-    public Object queryTestPage(){
-        return "test.html";
+    public Object showSecuritiesList(){
+        return "securities.html";
     }
 
 
-    @GetMapping("/info")
-    public Object queryInfoPage(){
-        return "info.html";
+    /**
+     * 跳转到行情分析页
+     * @param code
+     * @return
+     */
+    @GetMapping("/showSecuritiesMarket/{code}")
+    public Object showSecuritiesMarket(@PathVariable("code") String code){
+        return "securitiesMarket.html";
     }
 
 
-
+    /**
+     * 获取行情数据
+     * @param code
+     * @return
+     */
     @ResponseBody
-    @PostMapping("/queryMarkt")
-    public ResultUtil queryMarkt(String code){
+    @PostMapping("/queryMarket")
+    public ResultUtil queryMarket(String code){
         try {
             Map<String, Object> map = securitiesMarketService.queryMarkt(code);
             return ResultUtil.success(map);
@@ -49,6 +68,11 @@ public class TestController {
     }
 
 
+    /**
+     * 获取势能数据
+     * @param code
+     * @return
+     */
     @ResponseBody
     @PostMapping("/queryPotentialEnergy")
     public ResultUtil queryPotentialEnergy(String code){
@@ -88,14 +112,30 @@ public class TestController {
      * @return
      */
     @ResponseBody
-    @GetMapping("/queryRecommendData")
-    public ResultUtil queryRecommendData(){
+    @PostMapping("/queryRecommendData")
+    public ResultUtil queryRecommendData(Integer securitiesCategoryId, String code, Integer pageNo, Integer pageSize){
         try {
-            List<MarketMovingAverageVo> list = securitiesMarketService.queryRecommendData(1, 10);
+            List<MarketMovingAverageVo> list = securitiesMarketService.queryRecommendData(securitiesCategoryId, code, pageNo, pageSize);
             return ResultUtil.success(list);
         }catch (Exception e){
             e.printStackTrace();
             return ResultUtil.runErr();
+        }
+    }
+
+    /**
+     * 获取所有证券分类数据
+     * @return
+     */
+    @ResponseBody
+    @PostMapping("/querySecuritiesCategory")
+    public ResultUtil querySecuritiesCategory(){
+        try {
+            List<SecuritiesCategory> securitiesCategories = securitiesCategoryService.selectList();
+            return ResultUtil.success(securitiesCategories);
+        }catch (Exception e){
+            e.printStackTrace();
+            return ResultUtil.tokenErr();
         }
     }
 }

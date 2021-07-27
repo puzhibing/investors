@@ -6,6 +6,7 @@ import com.puzhibing.investors.service.ISecuritiesCategoryService;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.util.List;
 
 
 @Service
@@ -35,5 +36,15 @@ public class SecuritiesCategoryServiceImpl implements ISecuritiesCategoryService
     @Override
     public SecuritiesCategory selectById(Integer id) throws Exception {
         return securitiesCategoryMapper.selectById(id);
+    }
+
+    /**
+     * 获取列表数据
+     * @return
+     * @throws Exception
+     */
+    @Override
+    public List<SecuritiesCategory> selectList() throws Exception {
+        return securitiesCategoryMapper.selectList();
     }
 }

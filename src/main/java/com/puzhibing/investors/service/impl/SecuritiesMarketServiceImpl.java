@@ -44,6 +44,9 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
     private ISecuritiesCategoryService securitiesCategoryService;
 
     @Autowired
+    private IAveragePriceService averagePriceService;
+
+    @Autowired
     private RedisUtil redisUtil;
 
     @Autowired
@@ -1244,6 +1247,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                 try {
                     SecuritiesMarketServiceImpl.this.movingAverage(Arrays.asList(0, 5, 15, 30, 90, 365), list);
                     System.err.println(sdf.format(new Date()) + "------计算移动平均成交数据结束");
+                    averagePriceService.saveAveragePrice(securitiesCategoryCode);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -1336,29 +1340,23 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
      * @throws Exception
      */
     @Override
-    public List<MarketMovingAverageVo> queryRecommendData(Integer pageNo, Integer pageSize) throws Exception {
-        List<Securities> securities = securitiesMapper.querySecuritiesList(null, null);
+    public List<MarketMovingAverageVo> queryRecommendData(Integer securitiesCategoryId, String code, Integer pageNo, Integer pageSize) throws Exception {
+        pageNo = (pageNo - 1) * pageSize;
+        List<Map<String, Object>> maps = averagePriceService.queryRecommendData(securitiesCategoryId, code, pageNo, pageSize);
         List<MarketMovingAverageVo> list = new ArrayList<>();
-        for (Securities s : securities){
-            String value = fileUtil.read("movingAverage\\" + s.getSystemCode() + ".json");
-            JSONObject jsonObject = JSON.parseObject(value);
+        for (Map<String, Object> m : maps){
             MarketMovingAverageVo marketMovingAverageVo = new MarketMovingAverageVo();
-            marketMovingAverageVo.setCode(s.getCode());
-            marketMovingAverageVo.setSystemCode(s.getSystemCode());
-            marketMovingAverageVo.setName(s.getName());
-            SecuritiesCategory securitiesCategory = securitiesCategoryService.selectById(s.getSecuritiesCategoryId());
-            marketMovingAverageVo.setSecuritiesCategory(securitiesCategory.getName());
-            JSONArray m_avg_0 = jsonObject.getJSONArray("m_avg_0");
-            marketMovingAverageVo.setPrice(m_avg_0.getDouble(m_avg_0.size() - 1));
-            JSONArray m_avg_5 = jsonObject.getJSONArray("m_avg_5");
-            marketMovingAverageVo.setFiveAveragePrice(m_avg_5.getDouble(m_avg_5.size() - 1));
-            JSONArray m_avg_15 = jsonObject.getJSONArray("m_avg_15");
-            marketMovingAverageVo.setFifteenAveragePrice(m_avg_15.getDouble(m_avg_15.size() - 1));
-            double v = new BigDecimal(marketMovingAverageVo.getPrice()).subtract(new BigDecimal(marketMovingAverageVo.getFifteenAveragePrice())).setScale(2, RoundingMode.HALF_EVEN).doubleValue();
-            marketMovingAverageVo.setDifference(v);
+            marketMovingAverageVo.setCode(m.get("code").toString());
+            marketMovingAverageVo.setSystemCode(m.get("systemCode").toString());
+            marketMovingAverageVo.setName(m.get("name").toString());
+            marketMovingAverageVo.setSecuritiesCategory(m.get("securitiesCategory").toString());
+            marketMovingAverageVo.setPrice(Double.valueOf(m.get("price").toString()));
+            marketMovingAverageVo.setFiveAveragePrice(Double.valueOf(m.get("fiveAveragePrice").toString()));
+            marketMovingAverageVo.setFifteenAveragePrice(Double.valueOf(m.get("fifteenAveragePrice").toString()));
+            marketMovingAverageVo.setFiveDayDifference(Double.valueOf(m.get("fiveDayDifference").toString()));
+            marketMovingAverageVo.setFifteenDayDifference(Double.valueOf(m.get("fifteenDayDifference").toString()));
             list.add(marketMovingAverageVo);
         }
-        Collections.sort(list);
         return list;
     }
 }

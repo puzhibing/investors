@@ -97,5 +97,5 @@ public interface ISecuritiesMarketService {
      * @return
      * @throws Exception
      */
-    List<MarketMovingAverageVo> queryRecommendData(Integer pageNo, Integer pageSize) throws Exception;
+    List<MarketMovingAverageVo> queryRecommendData(Integer securitiesCategoryId, String code, Integer pageNo, Integer pageSize) throws Exception;
 }

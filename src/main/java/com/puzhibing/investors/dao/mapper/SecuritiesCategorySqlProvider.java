@@ -30,4 +30,15 @@ public class SecuritiesCategorySqlProvider {
         }}.toString();
     }
 
+
+    /**
+     * 获取所有数据
+     * @return
+     */
+    public String selectList(){
+        return new SQL(){{
+            SELECT("id, code, name, countryId")
+                    .FROM("db_securities_category");
+        }}.toString();
+    }
 }

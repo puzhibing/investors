@@ -2,6 +2,8 @@ package com.puzhibing.investors.service;
 
 import com.puzhibing.investors.pojo.SecuritiesCategory;
 
+import java.util.List;
+
 public interface ISecuritiesCategoryService {
 
 
@@ -21,4 +23,12 @@ public interface ISecuritiesCategoryService {
      * @throws Exception
      */
     SecuritiesCategory selectById(Integer id) throws Exception;
+
+
+    /**
+     * 获取列表数据
+     * @return
+     * @throws Exception
+     */
+    List<SecuritiesCategory> selectList() throws Exception;
 }

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>详情</title>
     <meta name="renderer" content="webkit">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
@@ -18,37 +18,10 @@
     </style>
 </head>
 <body>
-    <div class="layui-form" action="" lay-filter="formFilter">
-        <div class="screen" style="margin-top: 20px;">
-            <div class="layui-form-item">
-                <div class="layui-inline">
-                    <label class="layui-form-label">分类</label>
-                    <div class="layui-input-inline">
-                        <select name="securitiesCategoryFilter">
-                            <option value="">全部</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="layui-inline">
-                    <label class="layui-form-label">编号</label>
-                    <div class="layui-input-inline">
-                        <input type="text" name="code" class="layui-input">
-                    </div>
-                </div>
-                <div class="layui-inline">
-                    <div class="layui-input-block">
-                        <button type="submit" class="layui-btn" lay-submit="" lay-filter="demo1" onclick="queryMarkt()">立即提交</button>
-                        <button type="reset" class="layui-btn layui-btn-primary">重置</button>
-                    </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="chart">
-            <div id="markt"></div>
-            <div id="markt_" style="height: 400px;width: 100%;display: none;"></div>
-            <div id="potentialEnergy"></div>
-        </div>
+    <div class="chart">
+        <div id="markt"></div>
+        <div id="markt_" style="height: 400px;width: 100%;display: none;"></div>
+        <div id="potentialEnergy"></div>
     </div>
 </body>
 <script type="text/javascript" src="/js/jquery-v3.6.0.js"></script>
@@ -56,12 +29,10 @@
 <script src="/layui/layui.js" charset="utf-8"></script>
 <script type="text/javascript">
     var path = "http://127.0.0.1:8080";
-    var form,layer,laydate;
-    layui.use(['form', 'laydate'], function() {
-        form = layui.form;
-        layer = layui.layer;
-        laydate = layui.laydate;
-    });
+    var url = window.location.href;
+    var code = url.substring(url.lastIndexOf("/") + 1);
+    document.title = code + "-分析";
+    queryMarkt();
     $(document).scroll(function() {
         var scroH = $(document).scrollTop();  //滚动高度
         var viewH = $(window).height();  //可见高度
@@ -77,10 +48,10 @@
         if (contentH - (scroH + viewH) <= 100){  //距离底部高度小于100px
         }
         if (contentH == (scroH + viewH)){  //滚动条滑到底部啦
-            // pageNo++;
-            // getAllData(1);
         }
     });
+
+
 
 
     //下载行情数据
@@ -91,9 +62,8 @@
     //查询行情数据
     function queryMarkt() {
         $('#markt').html('');
-        var obj = form.val('formFilter');
-        $.post(path + "/test/queryMarkt", {
-            code: obj.code
+        $.post(path + "/test/queryMarket", {
+            code: code
         }, function (res) {
             if(res.code == 200){
                 var data = res.data;
@@ -288,9 +258,8 @@
 
     function queryPotentialEnergy() {
         $('#potentialEnergy').html('');
-        var obj = form.val('formFilter');
         $.post(path + "/test/queryPotentialEnergy", {
-            code: obj.code
+            code: code
         }, function (res) {
             if(res.code == 200){
                 var data = res.data;

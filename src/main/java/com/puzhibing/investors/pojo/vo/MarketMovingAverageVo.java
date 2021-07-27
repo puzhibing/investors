@@ -8,7 +8,7 @@ import java.util.Date;
  * 移动平均成交价
  */
 @Data
-public class MarketMovingAverageVo implements Comparable {
+public class MarketMovingAverageVo {
     /**
      * 证券编号
      */
@@ -38,26 +38,12 @@ public class MarketMovingAverageVo implements Comparable {
      */
     private Double fifteenAveragePrice;
     /**
-     * 差额
+     * 五日差额
      */
-    private Double difference;
+    private Double fiveDayDifference;
+    /**
+     * 十五日差额
+     */
+    private Double fifteenDayDifference;
 
-
-    @Override
-    public int compareTo(Object o) {
-        if (o instanceof MarketMovingAverageVo) {
-            MarketMovingAverageVo sm = (MarketMovingAverageVo) o;
-            if (this.difference == null || sm.difference == null) {
-                return -1;
-            }
-            if (this.difference < sm.getDifference()) {
-                return -1;
-            } else if (this.difference == sm.getDifference()) {
-                return 0;
-            } else {
-                return 1;
-            }
-        }
-        return 0;
-    }
 }

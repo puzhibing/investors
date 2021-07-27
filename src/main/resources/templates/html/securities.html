@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>推荐列表</title>
     <meta name="renderer" content="webkit">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
@@ -15,7 +15,7 @@
                 <div class="layui-inline">
                     <label class="layui-form-label">分类</label>
                     <div class="layui-input-inline">
-                        <select name="securitiesCategoryFilter">
+                        <select name="securitiesCategoryFilter" id="securitiesCategory">
                             <option value="">全部</option>
                         </select>
                     </div>
@@ -28,7 +28,7 @@
                 </div>
                 <div class="layui-inline">
                     <div class="layui-input-block">
-                        <button type="submit" class="layui-btn" lay-submit="" lay-filter="demo1" onclick="getAllData(2)">立即提交</button>
+                        <button type="submit" class="layui-btn" lay-submit="" lay-filter="demo1" onclick="queryList()">查询</button>
                         <button type="reset" class="layui-btn layui-btn-primary">重置</button>
                     </div>
                     </div>
@@ -36,7 +36,21 @@
             </div>
         </div>
         <div class="chart">
+            <table class="layui-table">
+                <colgroup>
+                    <col width="150">
+                    <col width="200">
+                    <col>
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>编号</th><th>系统编号</th><th>证券编号</th><th>证券名称</th><th>上市证券市场</th><th>当前成交价</th><th>五日移动成交价</th><th>十五日移动成交价</th><th>五日差额</th><th>十五日差额</th><th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
 
+                </tbody>
+            </table>
         </div>
     </div>
 </body>
@@ -45,18 +59,19 @@
 <script src="/layui/layui.js" charset="utf-8"></script>
 <script type="text/javascript">
     var pageNo = 1;
-    var pageSize = 10;
-    var path = "http://127.0.0.1:8080";
+    var pageSize = 30;
+    var path = "http://127.0.0.1:8888";
 
     var form,layer,laydate;
     layui.use(['form', 'laydate'], function() {
         form = layui.form;
         layer = layui.layer;
         laydate = layui.laydate;
-
-        // getAllData(1);
     });
 
+    $(function () {
+        querySecuritiesCategory();
+    })
 
 
     $(document).scroll(function() {
@@ -68,14 +83,69 @@
         if (contentH - (scroH + viewH) <= 100){  //距离底部高度小于100px
         }
         if (contentH == (scroH + viewH)){  //滚动条滑到底部啦
-            // pageNo++;
-            // getAllData(1);
+            pageNo++;
+            searchSubmit();
         }
     });
 
     function exportMarket(systemCode) {
         window.location.href = path + "/test/exportMarket?systemCode=" +systemCode;
     }
+
+
+
+    function querySecuritiesCategory() {
+        $.post(path + "/test/querySecuritiesCategory", {
+        }, function (res) {
+            if(res.code == 200){
+                var data = res.data;
+                var str = '<option value="">全部</option>'
+                for(var i = 0; i < data.length; i++) {
+                    str += '<option value="' + data[i].id + '">' + data[i].name + '</option>';
+                }
+                $('#securitiesCategory').html(str);
+                form.render();//更新渲染
+            }else{
+                alert(res.msg);
+            }
+        });
+    }
+
+
+    function queryList() {
+        pageNo = 1;
+        $('.chart tbody').html('');
+        searchSubmit();
+    }
+
+    function searchSubmit() {
+        var obj = form.val('formFilter');
+        $.post(path + "/test/queryRecommendData", {
+            securitiesCategoryId: obj.securitiesCategoryFilter,
+            code: obj.code,
+            pageNo: pageNo,
+            pageSize: pageSize
+        }, function (res) {
+            if(res.code == 200){
+                var data = res.data;
+                var str = '';
+                for(var i in data){
+                    str += '<tr><td>' + (parseInt(i) + 1 + ((pageNo - 1) * pageSize)) + '</td><td>' + data[i].systemCode + '</td><td>' + data[i].code + '</td><td>' + data[i].name + '</td>' +
+                        '<td>' + data[i].securitiesCategory + '</td><td>' + data[i].price + '</td><td>' + data[i].fiveAveragePrice + '</td><td>' + data[i].fifteenAveragePrice + '</td>' +
+                        '<td>' + data[i].fiveDayDifference + '</td><td>' + data[i].fifteenDayDifference + '</td><td><button class="layui-btn" onclick="showSecuritiesMarket(\'' + data[i].code + '\')">详情</button></td></tr>'
+                }
+                $('.chart tbody').append(str);
+            }else{
+                alert(res.msg);
+            }
+        });
+    }
+
+
+    function showSecuritiesMarket(code) {
+        window.open(path + "/securities/showSecuritiesMarket/" + code);
+    }
+
 
     function getAllData(type) {
         if(type == 2){//清除历史页面数据

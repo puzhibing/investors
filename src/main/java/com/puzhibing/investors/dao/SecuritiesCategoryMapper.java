@@ -7,6 +7,8 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.SelectProvider;
 
+import java.util.List;
+
 @Mapper
 public interface SecuritiesCategoryMapper {
 
@@ -27,4 +29,12 @@ public interface SecuritiesCategoryMapper {
      */
     @SelectProvider(type = SecuritiesCategorySqlProvider.class, method = "selectById")
     SecuritiesCategory selectById(@Param("id") Integer id);
+
+
+    /**
+     * 获取所有数据
+     * @return
+     */
+    @SelectProvider(type = SecuritiesCategorySqlProvider.class, method = "selectList")
+    List<SecuritiesCategory> selectList();
 }
