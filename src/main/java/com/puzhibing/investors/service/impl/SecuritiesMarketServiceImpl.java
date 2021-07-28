@@ -780,7 +780,12 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                 BigDecimal lastClosingPrice = new BigDecimal(null == sm.getLastClosingPrice() ? "0" : sm.getLastClosingPrice());//上期收盘价
                 BigDecimal topPrice = new BigDecimal(null == sm.getTopPrice() ? "0" : sm.getTopPrice());//本日最高
                 BigDecimal lowestPrice = new BigDecimal(null == sm.getLowestPrice() ? "0" : sm.getLowestPrice());//本日最低
-                BigDecimal multiply = topPrice.subtract(lastClosingPrice).subtract(lastClosingPrice.subtract(lowestPrice));//v = (to - la) - (la - lo)
+                BigDecimal multiply = null;
+                if(topPrice.subtract(lowestPrice).doubleValue() == 0){
+                    multiply = new BigDecimal(null == sm.getRiseFallPrice() ? "0" : sm.getRiseFallPrice());
+                }else{
+                    multiply = topPrice.subtract(lastClosingPrice).subtract(lastClosingPrice.subtract(lowestPrice));//v = (to - la) - (la - lo)
+                }
                 last = last.add(lastClosingPrice);
                 vs = vs.add(multiply);
                 num++;
