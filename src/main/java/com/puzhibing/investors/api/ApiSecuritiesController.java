@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.*;
 
 @CrossOrigin
 @RestController
-@RequestMapping("/securities")
-public class SecuritiesController {
+@RequestMapping("/apiSecurities")
+public class ApiSecuritiesController {
 
     @Autowired
     private ISecuritiesService securitiesService;

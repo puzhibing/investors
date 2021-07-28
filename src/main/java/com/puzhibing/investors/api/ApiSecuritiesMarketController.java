@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.*;
  */
 @CrossOrigin
 @RestController
-@RequestMapping("/securitiesMarket")
-public class SecuritiesMarketController {
+@RequestMapping("/apiSecuritiesMarket")
+public class ApiSecuritiesMarketController {
 
     @Autowired
     private ISecuritiesMarketService securitiesMarketService;
