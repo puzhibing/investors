@@ -56,13 +56,13 @@
 
     //下载行情数据
     function exportMarket(systemCode) {
-        window.location.href = path + "/test/exportMarket?systemCode=" +systemCode;
+        window.location.href = path + "/securities/exportMarket?systemCode=" +systemCode;
     }
 
     //查询行情数据
     function queryMarkt() {
         $('#markt').html('');
-        $.post(path + "/test/queryMarket", {
+        $.post(path + "/securities/queryMarket", {
             code: code
         }, function (res) {
             if(res.code == 200){
@@ -258,7 +258,7 @@
 
     function queryPotentialEnergy() {
         $('#potentialEnergy').html('');
-        $.post(path + "/test/queryPotentialEnergy", {
+        $.post(path + "/securities/queryPotentialEnergy", {
             code: code
         }, function (res) {
             if(res.code == 200){
