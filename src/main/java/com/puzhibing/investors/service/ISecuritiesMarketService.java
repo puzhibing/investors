@@ -54,6 +54,15 @@ public interface ISecuritiesMarketService {
     List<Map<String, Object>> queryPotentialEnergy(String code) throws Exception;
 
 
+
+    /**
+     * 获取移动平均势能数据
+     * @param code
+     * @throws Exception
+     */
+    List<Map<String, Object>> queryPotentialEnergy_(String code) throws Exception;
+
+
     /**
      * 初始化数据到缓存中
      * @return

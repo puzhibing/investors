@@ -86,6 +86,25 @@ public class SecuritiesController {
     }
 
 
+
+    /**
+     * 获取势能数据
+     * @param code
+     * @return
+     */
+    @ResponseBody
+    @PostMapping("/queryPotentialEnergy_")
+    public ResultUtil queryPotentialEnergy_(String code){
+        try {
+            List<Map<String, Object>> list = securitiesMarketService.queryPotentialEnergy_(code);
+            return ResultUtil.success(list);
+        }catch (Exception e){
+            e.printStackTrace();
+            return ResultUtil.runErr();
+        }
+    }
+
+
     /**
      * 下载数据
      * @param systemCode

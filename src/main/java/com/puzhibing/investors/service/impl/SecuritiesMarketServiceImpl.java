@@ -579,6 +579,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                 JSONObject jsonObject = JSON.parseObject(value);
                 List<SecuritiesMarketVo> market = jsonObject.getJSONArray("market").toJavaList(SecuritiesMarketVo.class);
                 Map<String, Object> map = new HashMap<>();
+                Map<String, Object> map1 = new HashMap<>();
                 for(int i = 0; i < days.size(); i++){
                     List<String> agr = new ArrayList<>();
                     Integer d = days.get(i);//天数
@@ -590,8 +591,25 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                         }
                         agr.add(avg.toString());
                     }
-                    map.put("p_avg_" + d, agr);
+                    map1.put("p_avg_" + d, agr);
                 }
+                map.put("last", map1);
+
+                Map<String, Object> map2 = new HashMap<>();
+                for(int i = 0; i < days.size(); i++){
+                    List<String> agr = new ArrayList<>();
+                    Integer d = days.get(i);//天数
+                    for(int j = 0; j < market.size(); j++){
+                        SecuritiesMarketVo object = market.get(j);
+                        Double avg = 0D;
+                        if(j > 0){
+                            avg = getAvgPotentialEnergy_(market, object.getTradeDate(), d);
+                        }
+                        agr.add(avg.toString());
+                    }
+                    map2.put("p_avg_" + d, agr);
+                }
+                map.put("today", map2);
 
                 List<String> date = new ArrayList<>();
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
@@ -803,6 +821,47 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
         return avg;
     }
 
+    public Double getAvgPotentialEnergy_(List<SecuritiesMarketVo> market, Date date, Integer days) throws Exception{
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd");
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) - days);
+        Date start = sdf.parse((sdf1.format(calendar.getTime()) + " 00:00:00"));
+        Date end = sdf.parse((sdf1.format(date) + " 23:59:59"));
+        BigDecimal today = new BigDecimal(0);//本期收盘价总和
+        BigDecimal vs = new BigDecimal(0);//差价总和
+        int num = 0;//天数
+        for(SecuritiesMarketVo sm : market){
+            if(start.getTime() <= sm.getTradeDate().getTime() && end.getTime() >= sm.getTradeDate().getTime()){
+                BigDecimal closingPrice = new BigDecimal(null == sm.getClosingPrice() ? "0" : sm.getClosingPrice());//本期收盘价
+                BigDecimal topPrice = new BigDecimal(null == sm.getTopPrice() ? "0" : sm.getTopPrice());//本日最高
+                BigDecimal lowestPrice = new BigDecimal(null == sm.getLowestPrice() ? "0" : sm.getLowestPrice());//本日最低
+                BigDecimal multiply = null;
+                if(topPrice.subtract(lowestPrice).doubleValue() == 0){
+                    multiply = new BigDecimal(null == sm.getRiseFallPrice() ? "0" : sm.getRiseFallPrice());
+                }else{
+                    multiply = closingPrice.subtract(topPrice).subtract(lowestPrice.subtract(closingPrice));
+                }
+                today = today.add(closingPrice);
+                vs = vs.add(multiply);
+                num++;
+            }
+        }
+        Double avg = 0D;
+        if(num > 0){
+            BigDecimal nu = new BigDecimal(num);
+            BigDecimal divide = vs.divide(nu, new MathContext(4, RoundingMode.HALF_EVEN));
+            BigDecimal divide1 = today.divide(nu, new MathContext(4, RoundingMode.HALF_EVEN));
+            if(divide.doubleValue() != 0 && divide1.doubleValue() != 0){
+                avg = divide.divide(divide1, new MathContext(4, RoundingMode.HALF_EVEN)).multiply(new BigDecimal(100)).doubleValue();
+            }
+        }
+        return avg;
+    }
+
+
+
 
 
     /**
@@ -943,12 +1002,55 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                 String startTime = date.get(date.size() - 90).toString();
                 map.put("id", l);
                 map.put("latitude", jsonObject.getJSONArray("date"));
-                map.put("value", jsonObject.getJSONArray("p_avg_" + l));
+                JSONObject last = jsonObject.getJSONObject("last");
+                map.put("value", last.getJSONArray("p_avg_" + l));
                 map.put("startTime", startTime);
                 list.add(map);
                 l++;
             }
+        }
+        return list;
+    }
 
+
+
+    /**
+     * 获取移动平均势能数据
+     * @param code
+     * @return
+     * @throws Exception
+     */
+    @Override
+    public List<Map<String, Object>> queryPotentialEnergy_(String code) throws Exception {
+        List<Securities> securities = securitiesMapper.queryList(code, null, null, null);
+        List<Map<String, Object>> list = new ArrayList<>();
+        if(securities.size() == 0){
+            return list;
+        }
+        Securities s = securities.get(0);
+        if(null != s){
+            int l = 1;
+            for(int i = 0; i < 10; i++){
+                if(i == 0){
+                    l = 0;
+                }
+                if(l == 1){
+                    l++;
+                }
+                Map<String, Object> map = new HashMap<>();
+                map.put("name", "");
+                String value = fileUtil.read("potentialEnergy\\" + s.getSystemCode() + ".json");
+                JSONObject jsonObject = JSON.parseObject(value);
+                JSONArray date = jsonObject.getJSONArray("date");
+                String startTime = date.get(date.size() - 90).toString();
+                map.put("id", l);
+                map.put("latitude", jsonObject.getJSONArray("date"));
+                JSONObject last = jsonObject.getJSONObject("today");
+                map.put("value", last.getJSONArray("p_avg_" + l));
+                map.put("startTime", startTime);
+                list.add(map);
+                l++;
+            }
         }
         return list;
     }

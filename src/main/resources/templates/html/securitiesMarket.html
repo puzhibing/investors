@@ -21,7 +21,16 @@
     <div class="chart">
         <div id="markt"></div>
         <div id="markt_" style="height: 400px;width: 100%;display: none;"></div>
-        <div id="potentialEnergy"></div>
+        <div style="width: 100%;">
+            <div style="width: 50%;float: left;margin-top: 20px;">
+                <div style="text-align: center; width: 100%;"><h3>上次期势能</h3></div>
+                <div id="potentialEnergy" style="width: 100%;"></div>
+            </div>
+            <div style="width: 50%;float: left;margin-top: 20px;">
+                <div style="text-align: center; width: 100%;"><h3>本期势能</h3></div>
+                <div id="potentialEnergy_" style="width: 100%;"></div>
+            </div>
+        </div>
     </div>
 </body>
 <script type="text/javascript" src="/js/jquery-v3.6.0.js"></script>
@@ -71,7 +80,7 @@
                 var systemCode = data.systemCode;
                 $('#markt').append('' +
                     '<div style="width: 100%" id="' + id + '">' +
-                    '   <div style="width: 60%; float: left;">' +
+                    '   <div style="width: 80%; float: left;margin-right: 50px;">' +
                     '       <div id="closingPrice' + id + '" style="width: 100%;height:400px;"></div>' +
                     '   </div>' +
                     '   <div>' +
@@ -80,6 +89,7 @@
                     '</div>');
                 buildClosingPrice(data);
                 queryPotentialEnergy();
+                queryPotentialEnergy_();
             }else{
                 alert(res.msg);
             }
@@ -267,13 +277,36 @@
                     var id = data[i].id;
                     $('#potentialEnergy').append('' +
                         '<div style="width: 100%" id="' + id + '">' +
-                        '   <div style="width: 60%; float: left;">' +
-                        '       <div id="potentialEnergy' + id + '" style="width: 100%;height:300px;"></div>' +
-                        '   </div>' +
+                        '   <div id="potentialEnergy' + id + '" style="width: 100%;height:300px;"></div>' +
                         '</div>');
                 }
                 if(data.length > 0){
                     buildRiseFallPrice(data);
+                }
+            }else{
+                alert(res.msg);
+            }
+        });
+    }
+
+
+
+    function queryPotentialEnergy_() {
+        $('#potentialEnergy_').html('');
+        $.post(path + "/securities/queryPotentialEnergy_", {
+            code: code
+        }, function (res) {
+            if(res.code == 200){
+                var data = res.data;
+                for(var i in data){
+                    var id = data[i].id;
+                    $('#potentialEnergy_').append('' +
+                        '<div style="width: 100%" id="' + id + '">' +
+                        '   <div id="potentialEnergy_' + id + '" style="width: 100%;height:300px;"></div>' +
+                        '</div>');
+                }
+                if(data.length > 0){
+                    buildRiseFallPrice_(data);
                 }
             }else{
                 alert(res.msg);
@@ -290,6 +323,89 @@
             var startTime = data[i].startTime;
             // 基于准备好的dom，初始化echarts实例
             var chartDom = document.getElementById('potentialEnergy' + id);
+            var myChart = echarts.init(chartDom);
+            var option;
+            var name = (i + 1) + "日均势";
+            option = {
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'cross',
+                        animation: false,
+                        label: {
+                            backgroundColor: '#ccc',
+                            borderColor: '#aaa',
+                            borderWidth: 1,
+                            shadowBlur: 0,
+                            shadowOffsetX: 0,
+                            shadowOffsetY: 0,
+                            color: '#222'
+                        }
+                    }
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                legend: {
+                    data: [name]
+                },
+                toolbox: {
+                    show: true,
+                    feature: {
+                        dataZoom: {
+                            yAxisIndex: 'none'
+                        },
+                        dataView: {readOnly: false},
+                        magicType: {type: ['line', 'bar']},
+                        restore: {},
+                        saveAsImage: {}
+                    }
+                },
+                dataZoom: [{
+                    startValue: startTime
+                }, {
+                    type: 'inside'
+                }],
+                xAxis: {
+                    type: 'category',
+                    boundaryGap: false,
+                    data: latitude
+                },
+                yAxis: {
+                    type: 'value'
+                },
+                series: [{
+                    name: name,
+                    data: value,
+                    type: 'line',
+                    areaStyle: {},
+                    itemStyle:{
+                        color: '#DB3462',
+                    },
+                    lineStyle: {
+                        color: '#DB3462',
+                        width: 1
+                    },
+                    showSymbol: false,
+                }]
+            };
+
+            option && myChart.setOption(option);
+        }
+    }
+
+
+    function buildRiseFallPrice_(data) {
+        for(var i = 0; i < data.length; i++){
+            var id = data[i].id;
+            var latitude = data[i].latitude;
+            var value = data[i].value;
+            var startTime = data[i].startTime;
+            // 基于准备好的dom，初始化echarts实例
+            var chartDom = document.getElementById('potentialEnergy_' + id);
             var myChart = echarts.init(chartDom);
             var option;
             var name = (i + 1) + "日均势";
