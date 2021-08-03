@@ -54,21 +54,6 @@ public interface AveragePriceMapper {
      * @param pageSize
      * @return
      */
-//    @Select("select * from (\n" +
-//            "select \n" +
-//            "b.`code` as `code`,\n" +
-//            "b.systemCode as systemCode,\n" +
-//            "b.`name` as `name`,\n" +
-//            "c.`name` as securitiesCategory,\n" +
-//            "a.price as price,\n" +
-//            "a.fiveAveragePrice as fiveAveragePrice,\n" +
-//            "a.fifteenAveragePrice as fifteenAveragePrice,\n" +
-//            "(a.fiveAveragePrice - a.price) as fiveDayDifference,\n" +
-//            "(a.fifteenAveragePrice - a.price) as fifteenDayDifference\n" +
-//            "from db_average_price a\n" +
-//            "left join db_securities b on (a.securitiesId = b.id)\n" +
-//            "left join db_securities_category c on (b.securitiesCategoryId = c.id)\n" +
-//            ") as aa ORDER BY aa.fiveDayDifference, aa.fifteenDayDifference limit #{pageNo}, #{pageSize}")
     @SelectProvider(type = AveragePriceSqlProvider.class, method = "queryRecommendData")
     List<Map<String, Object>> queryRecommendData(@Param("securitiesCategoryId") Integer securitiesCategoryId, @Param("code") String code,
                                                  @Param("pageNo") Integer pageNo, @Param("pageSize") Integer pageSize);

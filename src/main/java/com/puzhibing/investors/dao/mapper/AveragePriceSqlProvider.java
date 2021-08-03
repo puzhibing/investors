@@ -75,12 +75,13 @@ public class AveragePriceSqlProvider {
         sql_.SELECT("b.`code` as `code`,\n" +
                 "            b.systemCode as systemCode,\n" +
                 "            b.`name` as `name`,\n" +
+                "            b.follow as follow,\n" +
                 "            c.`name` as securitiesCategory,\n" +
                 "            a.price as price,\n" +
                 "            a.fiveAveragePrice as fiveAveragePrice,\n" +
                 "            a.fifteenAveragePrice as fifteenAveragePrice,\n" +
-                "            if(a.fiveAveragePrice > a.price, a.fiveAveragePrice - a.price, a.price - a.fiveAveragePrice) as fiveDayDifference,\n" +
-                "            if(a.fifteenAveragePrice > a.price, a.fifteenAveragePrice - a.price, a.price - a.fifteenAveragePrice) as fifteenDayDifference")
+                "            (a.fiveAveragePrice - a.price) as fiveDayDifference,\n" +
+                "            (a.fifteenAveragePrice - a.price) as fifteenDayDifference")
                 .FROM("db_average_price a")
                 .LEFT_OUTER_JOIN("db_securities b on (a.securitiesId = b.id)")
                 .LEFT_OUTER_JOIN("db_securities_category c on (b.securitiesCategoryId = c.id)")
@@ -95,8 +96,7 @@ public class AveragePriceSqlProvider {
         SQL sql = new SQL();
         sql.SELECT("*")
                 .FROM("(" + sql_.toString() + ") as aa")
-                .WHERE("aa.fiveDayDifference >= 0")
-                .GROUP_BY("aa.fiveDayDifference, aa.fifteenDayDifference")
+                .ORDER_BY("aa.fiveDayDifference desc, aa.fifteenDayDifference desc")
                 .LIMIT("#{pageNo}, #{pageSize}");
         return sql.toString();
     }

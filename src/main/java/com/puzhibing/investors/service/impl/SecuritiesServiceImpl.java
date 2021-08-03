@@ -158,6 +158,7 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
                 securities.setSecuritiesCategoryId(sh_a.getId());
                 securities.setMarketTime("".equals(listing_date) ? null : sdf.parse(listing_date));
                 securities.setMarketAddress("上海证券交易所");
+                securities.setFollow(1);
                 securitiesMapper.insert(securities);
             }
             //更新股本数据
@@ -239,6 +240,7 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
                 securities.setSecuritiesCategoryId(sh_b.getId());
                 securities.setMarketTime("".equals(listing_date) ? null : sdf.parse(listing_date));
                 securities.setMarketAddress("上海证券交易所");
+                securities.setFollow(1);
                 securitiesMapper.insert(securities);
             }
             //更新股本数据
@@ -328,6 +330,7 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
                     securities.setSecuritiesCategoryId(sz_a.getId());
                     securities.setMarketTime("".equals(listing_date) ? null : sdf.parse(listing_date));
                     securities.setMarketAddress("深证证券交易所");
+                    securities.setFollow(1);
                     securitiesMapper.insert(securities);
                 }
                 //更新股本数据
@@ -424,6 +427,7 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
                     securities.setSecuritiesCategoryId(sz_b.getId());
                     securities.setMarketTime("".equals(listing_date) ? null : sdf.parse(listing_date));
                     securities.setMarketAddress("深证证券交易所");
+                    securities.setFollow(1);
                     securitiesMapper.insert(securities);
                 }
                 //更新股本数据
@@ -463,5 +467,26 @@ public class SecuritiesServiceImpl implements ISecuritiesService {
             Thread.sleep(new Random().nextInt(10) * 1000);//暂停10内随机秒，防止因频繁调用被限制IP
         }
         System.err.println(sdf_.format(new Date()) + "------更新深证B股证券基础数据任务结束。");
+    }
+
+    /**
+     * 根据系统编号查询数据
+     * @param systemCode
+     * @return
+     * @throws Exception
+     */
+    @Override
+    public Securities querySystemCode(String systemCode) throws Exception {
+        return securitiesMapper.querySystemCode(systemCode);
+    }
+
+    /**
+     * 修改数据
+     * @param securities
+     * @throws Exception
+     */
+    @Override
+    public void updateById(Securities securities) throws Exception {
+        securitiesMapper.updateById(securities);
     }
 }

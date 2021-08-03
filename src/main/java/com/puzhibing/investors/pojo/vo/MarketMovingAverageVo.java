@@ -22,6 +22,10 @@ public class MarketMovingAverageVo {
      */
     private String name;
     /**
+     * 关注（1=否，2=关注）
+     */
+    private Integer follow;
+    /**
      * 上市证券交易所
      */
     private String securitiesCategory;

@@ -1456,6 +1456,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             marketMovingAverageVo.setCode(m.get("code").toString());
             marketMovingAverageVo.setSystemCode(m.get("systemCode").toString());
             marketMovingAverageVo.setName(m.get("name").toString());
+            marketMovingAverageVo.setFollow(Integer.valueOf(m.get("follow").toString()));
             marketMovingAverageVo.setSecuritiesCategory(m.get("securitiesCategory").toString());
             marketMovingAverageVo.setPrice(Double.valueOf(m.get("price").toString()));
             marketMovingAverageVo.setFiveAveragePrice(Double.valueOf(m.get("fiveAveragePrice").toString()));

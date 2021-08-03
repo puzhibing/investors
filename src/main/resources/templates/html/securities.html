@@ -81,10 +81,10 @@
         if(scroH >100){  //距离顶部大于100px时
         }
         if (contentH - (scroH + viewH) <= 100){  //距离底部高度小于100px
-        }
-        if (contentH == (scroH + viewH)){  //滚动条滑到底部啦
             pageNo++;
             searchSubmit();
+        }
+        if (contentH == (scroH + viewH)){  //滚动条滑到底部啦
         }
     });
 
@@ -104,7 +104,6 @@
                     str += '<option value="' + data[i].id + '">' + data[i].name + '</option>';
                 }
                 $('#securitiesCategory').html(str);
-                form.render();//更新渲染
             }else{
                 alert(res.msg);
             }
@@ -130,9 +129,22 @@
                 var data = res.data;
                 var str = '';
                 for(var i in data){
-                    str += '<tr><td>' + (parseInt(i) + 1 + ((pageNo - 1) * pageSize)) + '</td><td>' + data[i].systemCode + '</td><td>' + data[i].code + '</td><td>' + data[i].name + '</td>' +
+                    if(data[i].follow == 2){
+                        str += "<tr style='color: red;'>";
+                    }else{
+                        str += "<tr>";
+                    }
+                    str += '<td>' + (parseInt(i) + 1 + ((pageNo - 1) * pageSize)) + '</td><td>' + data[i].systemCode + '</td><td>' + data[i].code + '</td><td>' + data[i].name + '</td>' +
                         '<td>' + data[i].securitiesCategory + '</td><td>' + data[i].price + '</td><td>' + data[i].fiveAveragePrice + '</td><td>' + data[i].fifteenAveragePrice + '</td>' +
-                        '<td>' + data[i].fiveDayDifference + '</td><td>' + data[i].fifteenDayDifference + '</td><td><button class="layui-btn" onclick="showSecuritiesMarket(\'' + data[i].code + '\')">详情</button></td></tr>'
+                        '<td>' + data[i].fiveDayDifference + '</td><td>' + data[i].fifteenDayDifference + '</td><td>';
+                    if(data[i].follow == 2){
+                        str += '<button class="layui-btn layui-btn-danger layui-btn-xs" onclick="updateFollow(\'' + data[i].systemCode + '\',1)">取消关注</button>' +
+                            '<button class="layui-btn layui-btn-normal layui-btn-xs" onclick="showSecuritiesMarket(\'' + data[i].code + '\')">查看详情</button></td></tr>';
+                    }else{
+                        str += '<button class="layui-btn layui-btn-primary layui-btn-xs" onclick="updateFollow(\'' + data[i].systemCode + '\',2)">确认关注</button>' +
+                            '<button class="layui-btn layui-btn-normal layui-btn-xs" onclick="showSecuritiesMarket(\'' + data[i].code + '\')">查看详情</button></td></tr>';
+                    }
+
                 }
                 $('.chart tbody').append(str);
             }else{
@@ -147,6 +159,19 @@
     }
 
 
+    function updateFollow(systemCode, follow) {
+        $.post(path + "/securities/updateFollow", {
+            systemCode: systemCode,
+            follow: follow
+        }, function (res) {
+            if(res.code == 200){
+                queryList();
+            }else{
+                alert(res.msg);
+            }
+        });
+    }
+    
 </script>
 
 </html>

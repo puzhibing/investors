@@ -42,4 +42,8 @@ public class Securities {
      * 流通股本
      */
     private Long flowEquity;
+    /**
+     * 关注（1=否，2=关注）
+     */
+    private Integer follow;
 }

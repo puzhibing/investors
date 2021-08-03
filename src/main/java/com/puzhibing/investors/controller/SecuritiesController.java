@@ -1,10 +1,12 @@
 package com.puzhibing.investors.controller;
 
 
+import com.puzhibing.investors.pojo.Securities;
 import com.puzhibing.investors.pojo.SecuritiesCategory;
 import com.puzhibing.investors.pojo.vo.MarketMovingAverageVo;
 import com.puzhibing.investors.service.ISecuritiesCategoryService;
 import com.puzhibing.investors.service.ISecuritiesMarketService;
+import com.puzhibing.investors.service.ISecuritiesService;
 import com.puzhibing.investors.util.ResultUtil;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +30,12 @@ public class SecuritiesController {
 
     @Autowired
     private ISecuritiesCategoryService securitiesCategoryService;
+
+    @Autowired
+    private ISecuritiesService securitiesService;
+
+
+
 
     /**
      * 跳转到列表页
@@ -155,6 +163,30 @@ public class SecuritiesController {
         }catch (Exception e){
             e.printStackTrace();
             return ResultUtil.tokenErr();
+        }
+    }
+
+
+    /**
+     * 修改关注状态
+     * @param systemCode
+     * @param follow
+     * @return
+     */
+    @ResponseBody
+    @PostMapping("/updateFollow")
+    public ResultUtil updateFollow(String systemCode, Integer follow){
+        try {
+            Securities securities = securitiesService.querySystemCode(systemCode);
+            if(null == securities){
+                return ResultUtil.error("无效的数据");
+            }
+            securities.setFollow(follow);
+            securitiesService.updateById(securities);
+            return ResultUtil.success();
+        }catch (Exception e){
+            e.printStackTrace();
+            return ResultUtil.runErr();
         }
     }
 }
