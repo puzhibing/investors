@@ -34,7 +34,7 @@ public interface ISecuritiesMarketService {
      * @return
      * @throws Exception
      */
-    Map<String, Object> queryMarkt(String code) throws Exception;
+    Map<String, Object> queryMarkt(Integer type, String code) throws Exception;
 
 
 
@@ -90,6 +90,35 @@ public interface ISecuritiesMarketService {
      * @throws Exception
      */
     void potentialEnergyMovingAverage(String securitiesCategoryCode) throws Exception;
+
+
+    /**
+     * 计算周纬度日行情均价数据
+     * @param securitiesCategoryCode
+     * @throws Exception
+     */
+    void weekMovingAverage(String securitiesCategoryCode) throws Exception;
+
+    /**
+     * 计算月纬度日行情均价数据
+     * @param securitiesCategoryCode
+     * @throws Exception
+     */
+    void monthMovingAverage(String securitiesCategoryCode) throws Exception;
+
+    /**
+     * 计算季纬度日行情均价数据
+     * @param securitiesCategoryCode
+     * @throws Exception
+     */
+    void quarterMovingAverage(String securitiesCategoryCode) throws Exception;
+
+    /**
+     * 计算年纬度日行情均价数据
+     * @param securitiesCategoryCode
+     * @throws Exception
+     */
+    void yearMovingAverage(String securitiesCategoryCode) throws Exception;
 
 
     /**

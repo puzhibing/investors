@@ -212,6 +212,10 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             saveMarketToFile(securities.getSystemCode(), securitiesMarket, securitiesMarket.getTradeDate());//保存数据到文件中
         }
         System.err.println(sdf_.format(new Date()) + "------更新上证A股日行情数据任务结束。");
+        weekMovingAverage("sh_a");
+        monthMovingAverage("sh_a");
+        quarterMovingAverage("sh_a");
+        yearMovingAverage("sh_a");
         calculateMovingAverage("sh_a");
         potentialEnergyMovingAverage("sh_a");
     }
@@ -289,7 +293,10 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             saveMarketToFile(securities.getSystemCode(), shbSecuritiesMarket, shbSecuritiesMarket.getTradeDate());//保存数据到文件中
         }
         System.err.println(sdf_.format(new Date()) + "------更新上证B股日行情数据任务结束。");
-
+        weekMovingAverage("sh_b");
+        monthMovingAverage("sh_b");
+        quarterMovingAverage("sh_b");
+        yearMovingAverage("sh_b");
         calculateMovingAverage("sh_b");
         potentialEnergyMovingAverage("sh_b");
     }
@@ -395,7 +402,10 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             Thread.sleep(new Random().nextInt(10) * 1000);//暂停10内随机秒，防止因频繁调用被限制IP
         }
         System.err.println(sdf_.format(new Date()) + "------更新深证A股日行情数据任务结束。");
-
+        weekMovingAverage("sz_a");
+        monthMovingAverage("sz_a");
+        quarterMovingAverage("sz_a");
+        yearMovingAverage("sz_a");
         calculateMovingAverage("sz_a");
         potentialEnergyMovingAverage("sz_a");
     }
@@ -499,6 +509,10 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             Thread.sleep(new Random().nextInt(10) * 1000);//暂停10内随机秒，防止因频繁调用被限制IP
         }
         System.err.println(sdf_.format(new Date()) + "------更新深证B股日行情数据任务结束。");
+        weekMovingAverage("sz_b");
+        monthMovingAverage("sz_b");
+        quarterMovingAverage("sz_b");
+        yearMovingAverage("sz_b");
         calculateMovingAverage("sz_b");
         potentialEnergyMovingAverage("sz_b");
     }
@@ -550,7 +564,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                     JSONObject jsonObject = new JSONObject();
                     List<SecuritiesMarketVo> securitiesMarketVos = queryHistoricalMatket(s);
                     jsonObject.put("market", securitiesMarketVos);
-                    //处理完数据化保存到文件中
+                    //处理完数据后保存到文件中
                     fileUtil.write("market\\" + s.getSystemCode() + ".json", jsonObject.toJSONString());//写入
                     m--;//重新对当前数据进行处理
                     continue;
@@ -671,7 +685,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             map.put("id", s.getId());
             map.put("systemCode", s.getSystemCode());
             map.put("latitude", jsonObject.getJSONArray("date"));
-            map.put("closingPrice", jsonObject.getJSONArray("m_avg_0"));
+            map.put("closingPrice", jsonObject.getJSONArray("m_avg_1"));
             map.put("weekAvgClosingPrice", jsonObject.getJSONArray("m_avg_5"));
             map.put("halfMonthAvgClosingPrice", jsonObject.getJSONArray("m_avg_15"));
             map.put("monthAvgClosingPrice", jsonObject.getJSONArray("m_avg_30"));
@@ -684,7 +698,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
     }
 
     @Override
-    public Map<String, Object> queryMarkt(String code) throws Exception {
+    public Map<String, Object> queryMarkt(Integer type, String code) throws Exception {
         List<Securities> securities = securitiesMapper.queryList(code, null, null, null);
         Map<String, Object> map = new HashMap<>();
         if(securities.size() == 0){
@@ -695,18 +709,71 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             map.put("name", s.getName() + "(" + s.getCode() + ")");
             String value = fileUtil.read("movingAverage\\" + s.getSystemCode() + ".json");
             JSONObject jsonObject = JSON.parseObject(value);
-            JSONArray date = jsonObject.getJSONArray("date");
-            String startTime = date.get(date.size() - 90).toString();
-            map.put("id", s.getId());
-            map.put("systemCode", s.getSystemCode());
-            map.put("latitude", jsonObject.getJSONArray("date"));
-            map.put("closingPrice", jsonObject.getJSONArray("m_avg_0"));
-            map.put("weekAvgClosingPrice", jsonObject.getJSONArray("m_avg_5"));
-            map.put("halfMonthAvgClosingPrice", jsonObject.getJSONArray("m_avg_15"));
-            map.put("monthAvgClosingPrice", jsonObject.getJSONArray("m_avg_30"));
-            map.put("quarterAvgClosingPrice", jsonObject.getJSONArray("m_avg_90"));
-            map.put("yearAvgClosingPrice", jsonObject.getJSONArray("m_avg_365"));
-            map.put("startTime", startTime);
+            if(type == 1){//日
+                JSONArray date = jsonObject.getJSONArray("date");
+                String startTime = date.get(date.size() > 90 ? date.size() - 90 : 0).toString();
+                map.put("id", s.getId());
+                map.put("systemCode", s.getSystemCode());
+                map.put("latitude", jsonObject.getJSONArray("date"));
+                map.put("closingPrice", jsonObject.getJSONArray("m_avg_1"));
+                map.put("weekAvgClosingPrice", jsonObject.getJSONArray("m_avg_5"));
+                map.put("halfMonthAvgClosingPrice", jsonObject.getJSONArray("m_avg_10"));
+                map.put("monthAvgClosingPrice", jsonObject.getJSONArray("m_avg_20"));
+                map.put("quarterAvgClosingPrice", jsonObject.getJSONArray("m_avg_60"));
+                map.put("yearAvgClosingPrice", jsonObject.getJSONArray("m_avg_240"));
+                map.put("startTime", startTime);
+            }
+            if(type == 2){//周
+                String value1 = fileUtil.read("weekMovingAverage\\" + s.getSystemCode() + ".json");
+                JSONObject jsonObject1 = JSON.parseObject(value1);
+                JSONArray date = jsonObject1.getJSONArray("date");
+                String startTime = date.get(date.size() > 50 ? date.size() - 50 : 0).toString();
+                map.put("id", s.getId());
+                map.put("systemCode", s.getSystemCode());
+                map.put("latitude", jsonObject1.getJSONArray("date"));
+                map.put("closingPrice", jsonObject1.getJSONArray("m_avg_5"));
+                map.put("halfMonthAvgClosingPrice", jsonObject1.getJSONArray("m_avg_10"));
+                map.put("monthAvgClosingPrice", jsonObject1.getJSONArray("m_avg_20"));
+                map.put("quarterAvgClosingPrice", jsonObject1.getJSONArray("m_avg_60"));
+                map.put("yearAvgClosingPrice", jsonObject1.getJSONArray("m_avg_240"));
+                map.put("startTime", startTime);
+            }
+            if(type == 3){//月
+                String value1 = fileUtil.read("monthMovingAverage\\" + s.getSystemCode() + ".json");
+                JSONObject jsonObject1 = JSON.parseObject(value1);
+                JSONArray date = jsonObject1.getJSONArray("date");
+                String startTime = date.get(date.size() > 24 ? date.size() - 24 : 0).toString();
+                map.put("id", s.getId());
+                map.put("systemCode", s.getSystemCode());
+                map.put("latitude", jsonObject1.getJSONArray("date"));
+                map.put("closingPrice", jsonObject1.getJSONArray("m_avg_20"));
+                map.put("quarterAvgClosingPrice", jsonObject1.getJSONArray("m_avg_60"));
+                map.put("yearAvgClosingPrice", jsonObject1.getJSONArray("m_avg_240"));
+                map.put("startTime", startTime);
+            }
+            if(type == 4){//季
+                String value1 = fileUtil.read("quarterMovingAverage\\" + s.getSystemCode() + ".json");
+                JSONObject jsonObject1 = JSON.parseObject(value1);
+                JSONArray date = jsonObject1.getJSONArray("date");
+                String startTime = date.get(date.size() > 12 ? date.size() - 12 : 0).toString();
+                map.put("id", s.getId());
+                map.put("systemCode", s.getSystemCode());
+                map.put("latitude", jsonObject1.getJSONArray("date"));
+                map.put("closingPrice", jsonObject1.getJSONArray("m_avg_60"));
+                map.put("yearAvgClosingPrice", jsonObject1.getJSONArray("m_avg_240"));
+                map.put("startTime", startTime);
+            }
+            if(type == 5){//年
+                String value1 = fileUtil.read("yearMovingAverage\\" + s.getSystemCode() + ".json");
+                JSONObject jsonObject1 = JSON.parseObject(value1);
+                JSONArray date = jsonObject1.getJSONArray("date");
+                String startTime = date.get(0).toString();
+                map.put("id", s.getId());
+                map.put("systemCode", s.getSystemCode());
+                map.put("latitude", jsonObject1.getJSONArray("date"));
+                map.put("closingPrice", jsonObject1.getJSONArray("m_avg_240"));
+                map.put("startTime", startTime);
+            }
         }
         return map;
     }
@@ -761,24 +828,54 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
     public Double getAvgClosingPrice(List<SecuritiesMarketVo> market, Date date, Integer days) throws Exception{
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd");
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(date);
-        calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) - days);
-        Date start = sdf.parse((sdf1.format(calendar.getTime()) + " 00:00:00"));
+        Date start = sdf.parse((sdf1.format(date) + " 00:00:00"));
         Date end = sdf.parse((sdf1.format(date) + " 23:59:59"));
         BigDecimal sum = new BigDecimal(0);
-        int num = 0;
-        for(SecuritiesMarketVo sm : market){
+        Double avg = 0D;
+        int index = days;
+        for(int i = 0; i < market.size(); i++){
+            SecuritiesMarketVo sm = market.get(i);
             if(start.getTime() <= sm.getTradeDate().getTime() && end.getTime() >= sm.getTradeDate().getTime()){
-                sum = sum.add(new BigDecimal(null == sm.getClosingPrice() ? "0" : sm.getClosingPrice()));
-                num++;
+                if(i < days){
+                    index = i + 1;
+                }
+                if(i != 0){
+                    sum = sum.add(new BigDecimal(null == sm.getClosingPrice() ? "0" : sm.getClosingPrice()));
+                    for(int j = 1; j < index; j++){
+                        sm = market.get(i - j);
+                        sum = sum.add(new BigDecimal(null == sm.getClosingPrice() ? "0" : sm.getClosingPrice()));
+                    }
+                    avg = sum.divide(new BigDecimal(index), 2, RoundingMode.HALF_EVEN).doubleValue();
+                }
+                break;
             }
         }
-        Double avg = 0D;
-        if(num > 0){
-            avg = sum.divide(new BigDecimal(num), 2, RoundingMode.HALF_EVEN).doubleValue();
-        }
         return avg;
+
+
+
+
+
+//        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+//        SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd");
+//        Calendar calendar = Calendar.getInstance();
+//        calendar.setTime(date);
+//        calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) - days);
+//        Date start = sdf.parse((sdf1.format(calendar.getTime()) + " 00:00:00"));
+//        Date end = sdf.parse((sdf1.format(date) + " 23:59:59"));
+//        BigDecimal sum = new BigDecimal(0);
+//        int num = 0;
+//        for(SecuritiesMarketVo sm : market){
+//            if(start.getTime() <= sm.getTradeDate().getTime() && end.getTime() >= sm.getTradeDate().getTime()){
+//                sum = sum.add(new BigDecimal(null == sm.getClosingPrice() ? "0" : sm.getClosingPrice()));
+//                num++;
+//            }
+//        }
+//        Double avg = 0D;
+//        if(num > 0){
+//            avg = sum.divide(new BigDecimal(num), 2, RoundingMode.HALF_EVEN).doubleValue();
+//        }
+//        return avg;
     }
 
 
@@ -1085,7 +1182,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                 jsonObject1.put("market", market);
             }else{
                 jsonObject1 = new JSONObject();
-                jsonObject1.put("market", JSON.toJSONString(Arrays.asList(o)));
+                jsonObject1.put("market", Arrays.asList(o));
             }
             fileUtil.write("market\\" + fileName + ".json", jsonObject1.toJSONString());//更新到本地文件中
         }catch (Exception e){
@@ -1352,7 +1449,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             @Override
             public void run() {
                 try {
-                    SecuritiesMarketServiceImpl.this.movingAverage(Arrays.asList(0, 5, 15, 30, 90, 365), list);
+                    SecuritiesMarketServiceImpl.this.movingAverage(Arrays.asList(1, 5, 10, 20, 60, 240), list);
                     System.err.println(sdf.format(new Date()) + "------计算移动平均成交数据结束");
                     averagePriceService.saveAveragePrice(securitiesCategoryCode);
                 } catch (Exception e) {
@@ -1385,6 +1482,360 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             }
         }).start();
     }
+
+
+    /**
+     * 计算周纬度日行情均价数据
+     * @param securitiesCategoryCode
+     * @throws Exception
+     */
+    @Override
+    public void weekMovingAverage(String securitiesCategoryCode) throws Exception {
+        List<Securities> list = securitiesMapper.querySecuritiesList(null, securitiesCategoryCode);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        System.err.println(sdf.format(new Date()) + "------计算周纬度日行情均价数据开始");
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    for(Securities s : list){
+                        List<String> date = new ArrayList<>();
+                        List<String> price = new ArrayList<>();
+                        String value = fileUtil.read("market\\" + s.getSystemCode() + ".json");
+                        if(!StringUtils.hasLength(value)){
+                            continue;
+                        }
+                        JSONObject jsonObject = JSON.parseObject(value);
+                        List<SecuritiesMarketVo> market = jsonObject.getJSONArray("market").toJavaList(SecuritiesMarketVo.class);
+                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                        BigDecimal sum = new BigDecimal(0);
+                        int num = 0;
+                        for(int i = 0; i < market.size(); i++){
+                            SecuritiesMarketVo sm = market.get(i);
+                            Calendar calendar = Calendar.getInstance();
+                            calendar.setTime(sm.getTradeDate());
+                            int week = calendar.get(Calendar.DAY_OF_WEEK);
+                            week = week > 1 ? week - 1 : week + 6;
+                            if(week == 1){
+                                if(num != 0){
+                                    //计算上轮的数值
+                                    BigDecimal avg = sum.divide(new BigDecimal(num), new MathContext(2, RoundingMode.HALF_EVEN));
+                                    price.add(avg.toString());
+                                    date.add(sdf.format(market.get(i - 1).getTradeDate()));
+                                }
+
+                                //初始化本轮的数值
+                                sum = new BigDecimal(0);
+                                num = 0;
+                            }
+
+                            sum = sum.add(new BigDecimal(sm.getClosingPrice()));
+                            num++;
+
+                            if(i == market.size() - 1){//最后一轮的处理
+                                if(num != 0){
+                                    BigDecimal avg = sum.divide(new BigDecimal(num), new MathContext(2, RoundingMode.HALF_EVEN));
+                                    price.add(avg.toString());
+                                    date.add(sdf.format(sm.getTradeDate()));
+                                }
+                            }
+                        }
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("m_avg_5", price);
+                        map.put("date", date);
+                        List<Integer> days = Arrays.asList(10, 20, 60, 240);
+                        List<SecuritiesMarketVo> market_ = new ArrayList<>();
+                        for(int i = 0; i < price.size(); i++){
+                            SecuritiesMarketVo sm = new SecuritiesMarketVo();
+                            sm.setClosingPrice(price.get(i));
+                            sm.setTradeDate(sdf.parse(date.get(i)));
+                            market_.add(sm);
+                        }
+                        for(int i = 0; i < days.size(); i++){
+                            List<String> agr = new ArrayList<>();
+                            Integer d = days.get(i);//天数
+                            for(int j = 0; j < market_.size(); j++){
+                                SecuritiesMarketVo object = market_.get(j);
+                                Double avg = getAvgClosingPrice(market_, object.getTradeDate(), d);
+                                agr.add(avg.toString());
+                            }
+                            map.put("m_avg_" + d, agr);
+                        }
+                        fileUtil.write("weekMovingAverage\\" + s.getSystemCode() + ".json", JSON.toJSONString(map));
+                    }
+
+                    System.err.println(sdf.format(new Date()) + "------计算周纬度日行情均价数据结束");
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+
+
+
+    /**
+     * 计算月纬度日行情均价数据
+     * @param securitiesCategoryCode
+     * @throws Exception
+     */
+    @Override
+    public void monthMovingAverage(String securitiesCategoryCode) throws Exception {
+        List<Securities> list = securitiesMapper.querySecuritiesList(null, securitiesCategoryCode);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        System.err.println(sdf.format(new Date()) + "------计算月纬度日行情均价数据开始");
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    for(Securities s : list){
+                        List<String> date = new ArrayList<>();
+                        List<String> price = new ArrayList<>();
+                        String value = fileUtil.read("market\\" + s.getSystemCode() + ".json");
+                        if(!StringUtils.hasLength(value)){
+                            continue;
+                        }
+                        JSONObject jsonObject = JSON.parseObject(value);
+                        List<SecuritiesMarketVo> market = jsonObject.getJSONArray("market").toJavaList(SecuritiesMarketVo.class);
+                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                        BigDecimal sum = new BigDecimal(0);
+                        int num = 0;
+                        int m = 0;
+                        for(int i = 0; i < market.size(); i++){
+                            SecuritiesMarketVo sm = market.get(i);
+                            int month = DateUtil.createDate(sm.getTradeDate()).MONTH;
+                            if(i == 0){
+                                m = month;
+                            }
+                            if(m != month){//跨月
+                                //计算上轮的数值
+                                if(num != 0){
+                                    BigDecimal avg = sum.divide(new BigDecimal(num), new MathContext(2, RoundingMode.HALF_EVEN));
+                                    price.add(avg.toString());
+                                    date.add(sdf.format(market.get(i - 1).getTradeDate()));
+                                }
+
+                                //初始化本轮的数值
+                                sum = new BigDecimal(0);
+                                num = 0;
+                                m = month;
+                            }
+
+                            sum = sum.add(new BigDecimal(sm.getClosingPrice()));
+                            num++;
+
+                            if(i == market.size() - 1){//最后一轮的处理
+                                if(num != 0){
+                                    BigDecimal avg = sum.divide(new BigDecimal(num), new MathContext(2, RoundingMode.HALF_EVEN));
+                                    price.add(avg.toString());
+                                    date.add(sdf.format(sm.getTradeDate()));
+                                }
+                            }
+
+                        }
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("m_avg_20", price);
+                        map.put("date", date);
+                        List<Integer> days = Arrays.asList(60, 240);
+                        List<SecuritiesMarketVo> market_ = new ArrayList<>();
+                        for(int i = 0; i < price.size(); i++){
+                            SecuritiesMarketVo sm = new SecuritiesMarketVo();
+                            sm.setClosingPrice(price.get(i));
+                            sm.setTradeDate(sdf.parse(date.get(i)));
+                            market_.add(sm);
+                        }
+                        for(int i = 0; i < days.size(); i++){
+                            List<String> agr = new ArrayList<>();
+                            Integer d = days.get(i);//天数
+                            for(int j = 0; j < market_.size(); j++){
+                                SecuritiesMarketVo object = market_.get(j);
+                                Double avg = getAvgClosingPrice(market_, object.getTradeDate(), d);
+                                agr.add(avg.toString());
+                            }
+                            map.put("m_avg_" + d, agr);
+                        }
+                        fileUtil.write("monthMovingAverage\\" + s.getSystemCode() + ".json", JSON.toJSONString(map));
+                    }
+
+                    System.err.println(sdf.format(new Date()) + "------计算月纬度日行情均价数据结束");
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+
+
+
+
+    /**
+     * 计算季纬度日行情均价数据
+     * @param securitiesCategoryCode
+     * @throws Exception
+     */
+    @Override
+    public void quarterMovingAverage(String securitiesCategoryCode) throws Exception {
+        List<Securities> list = securitiesMapper.querySecuritiesList(null, securitiesCategoryCode);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        System.err.println(sdf.format(new Date()) + "------计算季纬度日行情均价数据开始");
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    for(Securities s : list){
+                        List<String> date = new ArrayList<>();
+                        List<String> price = new ArrayList<>();
+                        String value = fileUtil.read("market\\" + s.getSystemCode() + ".json");
+                        if(!StringUtils.hasLength(value)){
+                            continue;
+                        }
+                        JSONObject jsonObject = JSON.parseObject(value);
+                        List<SecuritiesMarketVo> market = jsonObject.getJSONArray("market").toJavaList(SecuritiesMarketVo.class);
+                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                        BigDecimal sum = new BigDecimal(0);
+                        int num = 0;
+                        int m = 0;
+                        for(int i = 0; i < market.size(); i++){
+                            SecuritiesMarketVo sm = market.get(i);
+                            int quarter = DateUtil.createDate(sm.getTradeDate()).QUARTER;
+                            if(i == 0){
+                                m = quarter;
+                            }
+                            if(m != quarter){//跨季
+                                //计算上轮的数值
+                                if(num != 0){
+                                    BigDecimal avg = sum.divide(new BigDecimal(num), new MathContext(2, RoundingMode.HALF_EVEN));
+                                    price.add(avg.toString());
+                                    date.add(sdf.format(market.get(i - 1).getTradeDate()));
+                                }
+
+                                //初始化本轮的数值
+                                sum = new BigDecimal(0);
+                                num = 0;
+                                m = quarter;
+                            }
+
+                            sum = sum.add(new BigDecimal(sm.getClosingPrice()));
+                            num++;
+
+                            if(i == market.size() - 1){//最后一轮的处理
+                                if(num != 0){
+                                    BigDecimal avg = sum.divide(new BigDecimal(num), new MathContext(2, RoundingMode.HALF_EVEN));
+                                    price.add(avg.toString());
+                                    date.add(sdf.format(sm.getTradeDate()));
+                                }
+                            }
+                        }
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("m_avg_60", price);
+                        map.put("date", date);
+                        List<Integer> days = Arrays.asList(240);
+                        List<SecuritiesMarketVo> market_ = new ArrayList<>();
+                        for(int i = 0; i < price.size(); i++){
+                            SecuritiesMarketVo sm = new SecuritiesMarketVo();
+                            sm.setClosingPrice(price.get(i));
+                            sm.setTradeDate(sdf.parse(date.get(i)));
+                            market_.add(sm);
+                        }
+                        for(int i = 0; i < days.size(); i++){
+                            List<String> agr = new ArrayList<>();
+                            Integer d = days.get(i);//天数
+                            for(int j = 0; j < market_.size(); j++){
+                                SecuritiesMarketVo object = market_.get(j);
+                                Double avg = getAvgClosingPrice(market_, object.getTradeDate(), d);
+                                agr.add(avg.toString());
+                            }
+                            map.put("m_avg_" + d, agr);
+                        }
+                        fileUtil.write("quarterMovingAverage\\" + s.getSystemCode() + ".json", JSON.toJSONString(map));
+                    }
+
+                    System.err.println(sdf.format(new Date()) + "------计算季纬度日行情均价数据结束");
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+
+
+
+
+
+    /**
+     * 计算年纬度日行情均价数据
+     * @param securitiesCategoryCode
+     * @throws Exception
+     */
+    @Override
+    public void yearMovingAverage(String securitiesCategoryCode) throws Exception {
+        List<Securities> list = securitiesMapper.querySecuritiesList(null, securitiesCategoryCode);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        System.err.println(sdf.format(new Date()) + "------计算年纬度日行情均价数据开始");
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    for(Securities s : list){
+                        List<String> date = new ArrayList<>();
+                        List<String> price = new ArrayList<>();
+                        String value = fileUtil.read("market\\" + s.getSystemCode() + ".json");
+                        if(!StringUtils.hasLength(value)){
+                            continue;
+                        }
+                        JSONObject jsonObject = JSON.parseObject(value);
+                        List<SecuritiesMarketVo> market = jsonObject.getJSONArray("market").toJavaList(SecuritiesMarketVo.class);
+                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                        BigDecimal sum = new BigDecimal(0);
+                        int num = 0;
+                        int m = 0;
+                        for(int i = 0; i < market.size(); i++){
+                            SecuritiesMarketVo sm = market.get(i);
+                            int year = DateUtil.createDate(sm.getTradeDate()).YEAR;
+                            if(i == 0){
+                                m = year;
+                            }
+                            if(m != year){//跨年
+                                //计算上轮的数值
+                                if(num != 0){
+                                    BigDecimal avg = sum.divide(new BigDecimal(num), new MathContext(2, RoundingMode.HALF_EVEN));
+                                    price.add(avg.toString());
+                                    date.add(sdf.format(market.get(i - 1).getTradeDate()));
+                                }
+
+                                //初始化本轮的数值
+                                sum = new BigDecimal(0);
+                                num = 0;
+                                m = year;
+                            }
+
+                            sum = sum.add(new BigDecimal(sm.getClosingPrice()));
+                            num++;
+
+                            if(i == market.size() - 1){//最后一轮的处理
+                                if(num != 0){
+                                    BigDecimal avg = sum.divide(new BigDecimal(num), new MathContext(2, RoundingMode.HALF_EVEN));
+                                    price.add(avg.toString());
+                                    date.add(sdf.format(sm.getTradeDate()));
+                                }
+                            }
+                        }
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("m_avg_240", price);
+                        map.put("date", date);
+                        fileUtil.write("yearMovingAverage\\" + s.getSystemCode() + ".json", JSON.toJSONString(map));
+                    }
+
+                    System.err.println(sdf.format(new Date()) + "------计算年纬度日行情均价数据结束");
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+
+
+
 
     /**
      * 导出数据到excel

@@ -1,6 +1,5 @@
 package com.puzhibing.investors.util;
 
-import org.springframework.stereotype.Component;
 
 import java.util.Calendar;
 import java.util.Date;
@@ -43,7 +42,9 @@ public class DateUtil {
         dateUtil.YEAR = calendar.get(calendar.YEAR);
         dateUtil.MONTH = calendar.get(calendar.MONTH) + 1;
         dateUtil.QUARTER = Double.valueOf((dateUtil.MONTH + 2) / 3).intValue();
-        dateUtil.WEEK = calendar.get(Calendar.DAY_OF_WEEK) - 1;
+        int week = calendar.get(Calendar.DAY_OF_WEEK);
+        week = week > 1 ? week - 1 : week + 6;
+        dateUtil.WEEK =  week;
         dateUtil.DAY = calendar.get(Calendar.DAY_OF_MONTH);
         dateUtil.HOUR = calendar.get(Calendar.HOUR_OF_DAY);
         dateUtil.MINUTE = calendar.get(Calendar.MINUTE);

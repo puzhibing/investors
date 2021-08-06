@@ -65,15 +65,17 @@ public class SecuritiesController {
      */
     @ResponseBody
     @PostMapping("/queryMarket")
-    public ResultUtil queryMarket(String code){
+    public ResultUtil queryMarket(Integer type, String code){
         try {
-            Map<String, Object> map = securitiesMarketService.queryMarkt(code);
+            Map<String, Object> map = securitiesMarketService.queryMarkt(type, code);
             return ResultUtil.success(map);
         }catch (Exception e){
             e.printStackTrace();
             return ResultUtil.runErr();
         }
     }
+
+
 
 
     /**

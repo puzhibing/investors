@@ -73,6 +73,41 @@ public class ApiSecuritiesMarketController {
 
 
     /**
+     * 计算周日纬度行情均价数据
+     * @return
+     */
+    @ResponseBody
+    @GetMapping("/weekMovingAverage")
+    public ResultUtil weekMovingAverage(){
+        try {
+            securitiesMarketService.weekMovingAverage("sh_a");
+            securitiesMarketService.weekMovingAverage("sh_b");
+            securitiesMarketService.weekMovingAverage("sz_a");
+            securitiesMarketService.weekMovingAverage("sz_b");
+
+            securitiesMarketService.monthMovingAverage("sh_a");
+            securitiesMarketService.monthMovingAverage("sh_b");
+            securitiesMarketService.monthMovingAverage("sz_a");
+            securitiesMarketService.monthMovingAverage("sz_b");
+
+            securitiesMarketService.quarterMovingAverage("sh_a");
+            securitiesMarketService.quarterMovingAverage("sh_b");
+            securitiesMarketService.quarterMovingAverage("sz_a");
+            securitiesMarketService.quarterMovingAverage("sz_b");
+
+            securitiesMarketService.yearMovingAverage("sh_a");
+            securitiesMarketService.yearMovingAverage("sh_b");
+            securitiesMarketService.yearMovingAverage("sz_a");
+            securitiesMarketService.yearMovingAverage("sz_b");
+            return ResultUtil.success();
+        }catch (Exception e){
+            e.printStackTrace();
+            return ResultUtil.runErr();
+        }
+    }
+
+
+    /**
      * 获取当日行情数据
      * @return
      */

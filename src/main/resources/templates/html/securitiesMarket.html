@@ -19,7 +19,24 @@
 </head>
 <body>
     <div class="chart">
-        <div id="markt"></div>
+        <div class="layui-tab" id="markt" lay-filter="tabFilter">
+            <ul class="layui-tab-title">
+                <li class="layui-this">日</li>
+                <li>周</li>
+                <li>月</li>
+                <li>季</li>
+                <li>年</li>
+            </ul>
+            <div class="layui-tab-content">
+                <div class="layui-tab-item layui-show" id="day"></div>
+                <div class="layui-tab-item" id="week"></div>
+                <div class="layui-tab-item" id="month"></div>
+                <div class="layui-tab-item" id="quarter"></div>
+                <div class="layui-tab-item" id="year"></div>
+            </div>
+        </div>
+
+
         <div id="markt_" style="height: 400px;width: 100%;display: none;"></div>
         <div style="width: 100%;">
             <div style="width: 50%;float: left;margin-top: 20px;">
@@ -41,7 +58,10 @@
     var url = window.location.href;
     var code = url.substring(url.lastIndexOf("/") + 1);
     document.title = code + "-分析";
-    queryMarkt();
+    queryPotentialEnergy();
+    queryPotentialEnergy_();
+    queryDayMarkt();
+
     $(document).scroll(function() {
         var scroH = $(document).scrollTop();  //滚动高度
         var viewH = $(window).height();  //可见高度
@@ -60,7 +80,27 @@
         }
     });
 
+    layui.use('element', function(){
+        var element = layui.element;
+        element.on('tab(tabFilter)', function(data){
+            if(data.index == 0){
+                queryDayMarkt();
+            }
+            if(data.index == 1){
+                weekMovingAverage();
+            }
+            if(data.index == 2){
+                monthMovingAverage();
+            }
+            if(data.index == 3){
+                quarterMovingAverage();
+            }
+            if(data.index == 4){
+                yearMovingAverage();
+            }
+        });
 
+    });
 
 
     //下载行情数据
@@ -69,37 +109,35 @@
     }
 
     //查询行情数据
-    function queryMarkt() {
-        $('#markt').html('');
+    function queryDayMarkt() {
+        $('#day').html('');
         $.post(path + "/securities/queryMarket", {
-            code: code
+            code: code,
+            type: 1
         }, function (res) {
             if(res.code == 200){
                 var data = res.data;
                 var id = data.id;
                 var systemCode = data.systemCode;
-                $('#markt').append('' +
-                    '<div style="width: 100%" id="' + id + '">' +
+                $('#day').append('' +
+                    '<div style="width: 100%">' +
                     '   <div style="width: 80%; float: left;margin-right: 50px;">' +
-                    '       <div id="closingPrice' + id + '" style="width: 100%;height:400px;"></div>' +
+                    '       <div id="dayClosingPrice' + id + '" style="width: 100%;height:400px;"></div>' +
                     '   </div>' +
                     '   <div>' +
                     '      <button class="layui-btn layui-btn-primary" onclick="exportMarket(\'' + systemCode + '\')">下载</button> ' +
                     '   </div>' +
                     '</div>');
-                buildClosingPrice(data);
-                queryPotentialEnergy();
-                queryPotentialEnergy_();
+                buildDayClosingPrice(data);
             }else{
                 alert(res.msg);
             }
         });
     }
-
     
 
     //构建行情图表
-    function buildClosingPrice(data) {
+    function buildDayClosingPrice(data) {
         var id = data.id;
         var latitude = data.latitude;
         var closingPrice = data.closingPrice;
@@ -111,7 +149,7 @@
         var name = data.name;
         var startTime = data.startTime;
         // 基于准备好的dom，初始化echarts实例
-        var myChart1 = echarts.init(document.getElementById('closingPrice' + id));
+        var myChart1 = echarts.init(document.getElementById('dayClosingPrice' + id));
 
         // 指定图表的配置项和数据
         option = {
@@ -257,6 +295,612 @@
                         width: 1
                     },
                     showSymbol: false,
+                }
+            ]
+        };
+        // 使用刚指定的配置项和数据显示图表。
+        myChart1.setOption(option);
+    }
+
+
+
+    //查询行情数据
+    function weekMovingAverage() {
+        $('#week').html('');
+        $.post(path + "/securities/queryMarket", {
+            code: code,
+            type: 2
+        }, function (res) {
+            if(res.code == 200){
+                var data = res.data;
+                var id = data.id;
+                var systemCode = data.systemCode;
+                $('#week').append('' +
+                    '<div style="width: 100%">' +
+                    '   <div style="width: 80%;">' +
+                    '       <div id="weekClosingPrice' + id + '" style="width: 100%;height:400px;"></div>' +
+                    '   </div>' +
+                    '</div>');
+                buildWeekClosingPrice(data);
+            }else{
+                alert(res.msg);
+            }
+        });
+    }
+
+
+    //构建行情图表
+    function buildWeekClosingPrice(data) {
+        var id = data.id;
+        var latitude = data.latitude;
+        var closingPrice = data.closingPrice;
+        var halfMonthAvgClosingPrice = data.halfMonthAvgClosingPrice;
+        var monthAvgClosingPrice = data.monthAvgClosingPrice;
+        var quarterAvgClosingPrice = data.quarterAvgClosingPrice;
+        var yearAvgClosingPrice = data.yearAvgClosingPrice;
+        var name = data.name;
+        var startTime = data.startTime;
+        // 基于准备好的dom，初始化echarts实例
+        var myChart1 = echarts.init(document.getElementById('weekClosingPrice' + id));
+
+        // 指定图表的配置项和数据
+        option = {
+            title: {
+                text: name
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'cross',
+                    animation: false,
+                    label: {
+                        backgroundColor: '#ccc',
+                        borderColor: '#aaa',
+                        borderWidth: 1,
+                        shadowBlur: 0,
+                        shadowOffsetX: 0,
+                        shadowOffsetY: 0,
+                        color: '#222'
+                    }
+                }
+            },
+            legend: {
+                data: ['收盘价', '15日移动平均', '30日移动平均', '90日移动平均', '365日移动平均']
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                containLabel: true
+            },
+            toolbox: {
+                show: true,
+                feature: {
+                    dataZoom: {
+                        yAxisIndex: 'none'
+                    },
+                    dataView: {readOnly: false},
+                    magicType: {type: ['line', 'bar']},
+                    restore: {},
+                    saveAsImage: {}
+                }
+            },
+            dataZoom: [{
+                startValue: startTime
+            }, {
+                type: 'inside'
+            }],
+            xAxis: {
+                type: 'category',
+                data: latitude
+            },
+            yAxis: {
+                type: 'value',
+                min: function (value) {
+                    return Math.floor(value.min);
+                },
+                max: function (value) {
+                    return Math.ceil(value.max);
+                },
+            },
+            series: [
+                {
+                    name: '收盘价',
+                    data: closingPrice,
+                    type: 'line',
+                    showSymbol: false,
+                    itemStyle:{
+                        color: '#DB3462',
+                    },
+                    lineStyle: {
+                        color: '#DB3462',
+                        width: 1
+                    },
+                    markPoint: {
+                        data: [
+                            {type: 'max', name: '最大值'},
+                            {type: 'min', name: '最小值'}
+                        ]
+                    },
+                },
+                {
+                    name: '15日移动平均',
+                    data: halfMonthAvgClosingPrice,
+                    type: 'line',
+                    itemStyle:{
+                        color: '#FDD767',
+                    },
+                    lineStyle: {
+                        color: '#FDD767',
+                        width: 1
+                    },
+                    showSymbol: false,
+                },
+                {
+                    name: '30日移动平均',
+                    data: monthAvgClosingPrice,
+                    type: 'line',
+                    itemStyle:{
+                        color: '#5B7AD7',
+                    },
+                    lineStyle: {
+                        color: '#5B7AD7',
+                        width: 1
+                    },
+                    showSymbol: false,
+                },
+                {
+                    name: '90日移动平均',
+                    data: quarterAvgClosingPrice,
+                    type: 'line',
+                    itemStyle:{
+                        color: '#73C0DE',
+                    },
+                    lineStyle: {
+                        color: '#73C0DE',
+                        width: 1
+                    },
+                    showSymbol: false,
+                },
+                {
+                    name: '365日移动平均',
+                    data: yearAvgClosingPrice,
+                    type: 'line',
+                    itemStyle:{
+                        color: '#3BA272',
+                    },
+                    lineStyle: {
+                        color: '#3BA272',
+                        width: 1
+                    },
+                    showSymbol: false,
+                }
+            ]
+        };
+        // 使用刚指定的配置项和数据显示图表。
+        myChart1.setOption(option);
+    }
+
+
+
+
+    //查询行情数据
+    function monthMovingAverage() {
+        $('#week').html('');
+        $.post(path + "/securities/queryMarket", {
+            code: code,
+            type: 3
+        }, function (res) {
+            if(res.code == 200){
+                var data = res.data;
+                var id = data.id;
+                var systemCode = data.systemCode;
+                $('#week').append('' +
+                    '<div style="width: 100%">' +
+                    '   <div style="width: 80%;">' +
+                    '       <div id="monthClosingPrice' + id + '" style="width: 100%;height:400px;"></div>' +
+                    '   </div>' +
+                    '</div>');
+                buildMonthClosingPrice(data);
+            }else{
+                alert(res.msg);
+            }
+        });
+    }
+
+
+    //构建行情图表
+    function buildMonthClosingPrice(data) {
+        var id = data.id;
+        var latitude = data.latitude;
+        var closingPrice = data.closingPrice;
+        var monthAvgClosingPrice = data.monthAvgClosingPrice;
+        var quarterAvgClosingPrice = data.quarterAvgClosingPrice;
+        var yearAvgClosingPrice = data.yearAvgClosingPrice;
+        var name = data.name;
+        var startTime = data.startTime;
+        // 基于准备好的dom，初始化echarts实例
+        var myChart1 = echarts.init(document.getElementById('monthClosingPrice' + id));
+
+        // 指定图表的配置项和数据
+        option = {
+            title: {
+                text: name
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'cross',
+                    animation: false,
+                    label: {
+                        backgroundColor: '#ccc',
+                        borderColor: '#aaa',
+                        borderWidth: 1,
+                        shadowBlur: 0,
+                        shadowOffsetX: 0,
+                        shadowOffsetY: 0,
+                        color: '#222'
+                    }
+                }
+            },
+            legend: {
+                data: ['收盘价',  '30日移动平均', '90日移动平均', '365日移动平均']
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                containLabel: true
+            },
+            toolbox: {
+                show: true,
+                feature: {
+                    dataZoom: {
+                        yAxisIndex: 'none'
+                    },
+                    dataView: {readOnly: false},
+                    magicType: {type: ['line', 'bar']},
+                    restore: {},
+                    saveAsImage: {}
+                }
+            },
+            dataZoom: [{
+                startValue: startTime
+            }, {
+                type: 'inside'
+            }],
+            xAxis: {
+                type: 'category',
+                data: latitude
+            },
+            yAxis: {
+                type: 'value',
+                min: function (value) {
+                    return Math.floor(value.min);
+                },
+                max: function (value) {
+                    return Math.ceil(value.max);
+                },
+            },
+            series: [
+                {
+                    name: '收盘价',
+                    data: closingPrice,
+                    type: 'line',
+                    showSymbol: false,
+                    itemStyle:{
+                        color: '#DB3462',
+                    },
+                    lineStyle: {
+                        color: '#DB3462',
+                        width: 1
+                    },
+                    markPoint: {
+                        data: [
+                            {type: 'max', name: '最大值'},
+                            {type: 'min', name: '最小值'}
+                        ]
+                    },
+                },
+                {
+                    name: '30日移动平均',
+                    data: monthAvgClosingPrice,
+                    type: 'line',
+                    itemStyle:{
+                        color: '#5B7AD7',
+                    },
+                    lineStyle: {
+                        color: '#5B7AD7',
+                        width: 1
+                    },
+                    showSymbol: false,
+                },
+                {
+                    name: '90日移动平均',
+                    data: quarterAvgClosingPrice,
+                    type: 'line',
+                    itemStyle:{
+                        color: '#73C0DE',
+                    },
+                    lineStyle: {
+                        color: '#73C0DE',
+                        width: 1
+                    },
+                    showSymbol: false,
+                },
+                {
+                    name: '365日移动平均',
+                    data: yearAvgClosingPrice,
+                    type: 'line',
+                    itemStyle:{
+                        color: '#3BA272',
+                    },
+                    lineStyle: {
+                        color: '#3BA272',
+                        width: 1
+                    },
+                    showSymbol: false,
+                }
+            ]
+        };
+        // 使用刚指定的配置项和数据显示图表。
+        myChart1.setOption(option);
+    }
+
+
+
+
+    //查询行情数据
+    function quarterMovingAverage() {
+        $('#week').html('');
+        $.post(path + "/securities/queryMarket", {
+            code: code,
+            type: 4
+        }, function (res) {
+            if(res.code == 200){
+                var data = res.data;
+                var id = data.id;
+                var systemCode = data.systemCode;
+                $('#week').append('' +
+                    '<div style="width: 100%">' +
+                    '   <div style="width: 80%;">' +
+                    '       <div id="quarterClosingPrice' + id + '" style="width: 100%;height:400px;"></div>' +
+                    '   </div>' +
+                    '</div>');
+                buildQuarterClosingPrice(data);
+            }else{
+                alert(res.msg);
+            }
+        });
+    }
+
+
+    //构建行情图表
+    function buildQuarterClosingPrice(data) {
+        var id = data.id;
+        var latitude = data.latitude;
+        var closingPrice = data.closingPrice;
+        var yearAvgClosingPrice = data.yearAvgClosingPrice;
+        var name = data.name;
+        var startTime = data.startTime;
+        // 基于准备好的dom，初始化echarts实例
+        var myChart1 = echarts.init(document.getElementById('quarterClosingPrice' + id));
+
+        // 指定图表的配置项和数据
+        option = {
+            title: {
+                text: name
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'cross',
+                    animation: false,
+                    label: {
+                        backgroundColor: '#ccc',
+                        borderColor: '#aaa',
+                        borderWidth: 1,
+                        shadowBlur: 0,
+                        shadowOffsetX: 0,
+                        shadowOffsetY: 0,
+                        color: '#222'
+                    }
+                }
+            },
+            legend: {
+                data: ['收盘价', '365日移动平均']
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                containLabel: true
+            },
+            toolbox: {
+                show: true,
+                feature: {
+                    dataZoom: {
+                        yAxisIndex: 'none'
+                    },
+                    dataView: {readOnly: false},
+                    magicType: {type: ['line', 'bar']},
+                    restore: {},
+                    saveAsImage: {}
+                }
+            },
+            dataZoom: [{
+                startValue: startTime
+            }, {
+                type: 'inside'
+            }],
+            xAxis: {
+                type: 'category',
+                data: latitude
+            },
+            yAxis: {
+                type: 'value',
+                min: function (value) {
+                    return Math.floor(value.min);
+                },
+                max: function (value) {
+                    return Math.ceil(value.max);
+                },
+            },
+            series: [
+                {
+                    name: '收盘价',
+                    data: closingPrice,
+                    type: 'line',
+                    showSymbol: false,
+                    itemStyle:{
+                        color: '#DB3462',
+                    },
+                    lineStyle: {
+                        color: '#DB3462',
+                        width: 1
+                    },
+                    markPoint: {
+                        data: [
+                            {type: 'max', name: '最大值'},
+                            {type: 'min', name: '最小值'}
+                        ]
+                    },
+                },
+                {
+                    name: '365日移动平均',
+                    data: yearAvgClosingPrice,
+                    type: 'line',
+                    itemStyle:{
+                        color: '#3BA272',
+                    },
+                    lineStyle: {
+                        color: '#3BA272',
+                        width: 1
+                    },
+                    showSymbol: false,
+                }
+            ]
+        };
+        // 使用刚指定的配置项和数据显示图表。
+        myChart1.setOption(option);
+    }
+
+
+
+    //查询行情数据
+    function yearMovingAverage() {
+        $('#week').html('');
+        $.post(path + "/securities/queryMarket", {
+            code: code,
+            type: 5
+        }, function (res) {
+            if(res.code == 200){
+                var data = res.data;
+                var id = data.id;
+                var systemCode = data.systemCode;
+                $('#week').append('' +
+                    '<div style="width: 100%">' +
+                    '   <div style="width: 80%;">' +
+                    '       <div id="yearClosingPrice' + id + '" style="width: 100%;height:400px;"></div>' +
+                    '   </div>' +
+                    '</div>');
+                buildYearClosingPrice(data);
+            }else{
+                alert(res.msg);
+            }
+        });
+    }
+
+
+    //构建行情图表
+    function buildYearClosingPrice(data) {
+        var id = data.id;
+        var latitude = data.latitude;
+        var closingPrice = data.closingPrice;
+        var name = data.name;
+        var startTime = data.startTime;
+        // 基于准备好的dom，初始化echarts实例
+        var myChart1 = echarts.init(document.getElementById('yearClosingPrice' + id));
+
+        // 指定图表的配置项和数据
+        option = {
+            title: {
+                text: name
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'cross',
+                    animation: false,
+                    label: {
+                        backgroundColor: '#ccc',
+                        borderColor: '#aaa',
+                        borderWidth: 1,
+                        shadowBlur: 0,
+                        shadowOffsetX: 0,
+                        shadowOffsetY: 0,
+                        color: '#222'
+                    }
+                }
+            },
+            legend: {
+                data: ['收盘价']
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                containLabel: true
+            },
+            toolbox: {
+                show: true,
+                feature: {
+                    dataZoom: {
+                        yAxisIndex: 'none'
+                    },
+                    dataView: {readOnly: false},
+                    magicType: {type: ['line', 'bar']},
+                    restore: {},
+                    saveAsImage: {}
+                }
+            },
+            dataZoom: [{
+                startValue: startTime
+            }, {
+                type: 'inside'
+            }],
+            xAxis: {
+                type: 'category',
+                data: latitude
+            },
+            yAxis: {
+                type: 'value',
+                min: function (value) {
+                    return Math.floor(value.min);
+                },
+                max: function (value) {
+                    return Math.ceil(value.max);
+                },
+            },
+            series: [
+                {
+                    name: '收盘价',
+                    data: closingPrice,
+                    type: 'line',
+                    showSymbol: false,
+                    itemStyle:{
+                        color: '#DB3462',
+                    },
+                    lineStyle: {
+                        color: '#DB3462',
+                        width: 1
+                    },
+                    markPoint: {
+                        data: [
+                            {type: 'max', name: '最大值'},
+                            {type: 'min', name: '最小值'}
+                        ]
+                    },
                 }
             ]
         };

@@ -138,11 +138,11 @@
                         '<td>' + data[i].securitiesCategory + '</td><td>' + data[i].price + '</td><td>' + data[i].fiveAveragePrice + '</td><td>' + data[i].fifteenAveragePrice + '</td>' +
                         '<td>' + data[i].fiveDayDifference + '</td><td>' + data[i].fifteenDayDifference + '</td><td>';
                     if(data[i].follow == 2){
-                        str += '<button class="layui-btn layui-btn-danger layui-btn-xs" onclick="updateFollow(\'' + data[i].systemCode + '\',1)">取消关注</button>' +
-                            '<button class="layui-btn layui-btn-normal layui-btn-xs" onclick="showSecuritiesMarket(\'' + data[i].code + '\')">查看详情</button></td></tr>';
+                        str += '<button class="layui-btn layui-btn-danger layui-btn-sm" onclick="updateFollow(\'' + data[i].systemCode + '\',1)">取消关注</button>' +
+                            '<button class="layui-btn layui-btn-normal layui-btn-sm" onclick="showSecuritiesMarket(\'' + data[i].code + '\')">查看详情</button></td></tr>';
                     }else{
-                        str += '<button class="layui-btn layui-btn-primary layui-btn-xs" onclick="updateFollow(\'' + data[i].systemCode + '\',2)">确认关注</button>' +
-                            '<button class="layui-btn layui-btn-normal layui-btn-xs" onclick="showSecuritiesMarket(\'' + data[i].code + '\')">查看详情</button></td></tr>';
+                        str += '<button class="layui-btn layui-btn-primary layui-btn-sm" onclick="updateFollow(\'' + data[i].systemCode + '\',2)">确认关注</button>' +
+                            '<button class="layui-btn layui-btn-normal layui-btn-sm" onclick="showSecuritiesMarket(\'' + data[i].code + '\')">查看详情</button></td></tr>';
                     }
 
                 }

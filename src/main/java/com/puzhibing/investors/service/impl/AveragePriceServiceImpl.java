@@ -55,24 +55,23 @@ public class AveragePriceServiceImpl implements IAveragePriceService {
                     if(averagePrice == null){
                         averagePrice = new AveragePrice();
                         averagePrice.setSecuritiesId(s.getId());
-                        JSONArray m_avg_0 = jsonObject.getJSONArray("m_avg_0");
-                        averagePrice.setPrice(m_avg_0.getDouble(m_avg_0.size() - 1));
+                        JSONArray m_avg_1 = jsonObject.getJSONArray("m_avg_1");
+                        averagePrice.setPrice(m_avg_1.getDouble(m_avg_1.size() - 1));
                         JSONArray m_avg_5 = jsonObject.getJSONArray("m_avg_5");
                         averagePrice.setFiveAveragePrice(m_avg_5.getDouble(m_avg_5.size() - 1));
-                        JSONArray m_avg_15 = jsonObject.getJSONArray("m_avg_15");
-                        averagePrice.setFifteenAveragePrice(m_avg_15.getDouble(m_avg_15.size() - 1));
+                        JSONArray m_avg_10 = jsonObject.getJSONArray("m_avg_10");
+                        averagePrice.setFifteenAveragePrice(m_avg_10.getDouble(m_avg_10.size() - 1));
                         averagePriceMapper.insert(averagePrice);
                     }else{
-                        JSONArray m_avg_0 = jsonObject.getJSONArray("m_avg_0");
-                        averagePrice.setPrice(m_avg_0.getDouble(m_avg_0.size() - 1));
+                        JSONArray m_avg_1 = jsonObject.getJSONArray("m_avg_1");
+                        averagePrice.setPrice(m_avg_1.getDouble(m_avg_1.size() - 1));
                         JSONArray m_avg_5 = jsonObject.getJSONArray("m_avg_5");
                         averagePrice.setFiveAveragePrice(m_avg_5.getDouble(m_avg_5.size() - 1));
-                        JSONArray m_avg_15 = jsonObject.getJSONArray("m_avg_15");
-                        averagePrice.setFifteenAveragePrice(m_avg_15.getDouble(m_avg_15.size() - 1));
+                        JSONArray m_avg_10 = jsonObject.getJSONArray("m_avg_10");
+                        averagePrice.setFifteenAveragePrice(m_avg_10.getDouble(m_avg_10.size() - 1));
                         averagePriceMapper.updateById(averagePrice);
                     }
                 }
-
                 System.err.println(sdf.format(new Date()) + "------保存移动平均成交数据结束");
             }
         }).start();
