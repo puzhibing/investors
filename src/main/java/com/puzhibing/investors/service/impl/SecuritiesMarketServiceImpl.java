@@ -1420,6 +1420,9 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                     securitiesMarketVo.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
                     securitiesMarketVo.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
                     securitiesMarketVo.setTurnoverRate(hsl);
+                    if(!StringUtils.hasLength(securitiesMarketVo.getClosingPrice())){
+                        continue;
+                    }
                     list.add(securitiesMarketVo);
                 }
                 quarter++;
@@ -1621,6 +1624,9 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                                 m = month;
                             }
 
+                            if(!StringUtils.hasLength(sm.getClosingPrice())){
+                                System.err.println(s.getSystemCode());
+                            }
                             sum = sum.add(new BigDecimal(sm.getClosingPrice()));
                             num++;
 
@@ -1714,7 +1720,9 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                                 num = 0;
                                 m = quarter;
                             }
-
+                            if(!StringUtils.hasLength(sm.getClosingPrice())){
+                                System.err.println(s.getSystemCode());
+                            }
                             sum = sum.add(new BigDecimal(sm.getClosingPrice()));
                             num++;
 

@@ -68,7 +68,7 @@
         var contentH = $(document).height();  //内容高度
         if(scroH == 0){  //到达顶部
             $('#markt_').hide();
-            $('#markt').removeAttr('class');
+            $('#markt').attr('class', 'layui-tab');
         }
         if(scroH >100){  //距离顶部大于100px时
             $('#markt_').show();
@@ -224,12 +224,12 @@
                         color: '#DB3462',
                         width: 1
                     },
-                    markPoint: {
-                        data: [
-                            {type: 'max', name: '最大值'},
-                            {type: 'min', name: '最小值'}
-                        ]
-                    },
+                    // markPoint: {
+                    //     data: [
+                    //         {type: 'max', name: '最大值'},
+                    //         {type: 'min', name: '最小值'}
+                    //     ]
+                    // },
                 },
                 {
                     name: '5日移动平均',
@@ -416,12 +416,12 @@
                         color: '#DB3462',
                         width: 1
                     },
-                    markPoint: {
-                        data: [
-                            {type: 'max', name: '最大值'},
-                            {type: 'min', name: '最小值'}
-                        ]
-                    },
+                    // markPoint: {
+                    //     data: [
+                    //         {type: 'max', name: '最大值'},
+                    //         {type: 'min', name: '最小值'}
+                    //     ]
+                    // },
                 },
                 {
                     name: '15日移动平均',
@@ -486,7 +486,7 @@
 
     //查询行情数据
     function monthMovingAverage() {
-        $('#week').html('');
+        $('#month').html('');
         $.post(path + "/securities/queryMarket", {
             code: code,
             type: 3
@@ -495,7 +495,7 @@
                 var data = res.data;
                 var id = data.id;
                 var systemCode = data.systemCode;
-                $('#week').append('' +
+                $('#month').append('' +
                     '<div style="width: 100%">' +
                     '   <div style="width: 80%;">' +
                     '       <div id="monthClosingPrice' + id + '" style="width: 100%;height:400px;"></div>' +
@@ -595,12 +595,12 @@
                         color: '#DB3462',
                         width: 1
                     },
-                    markPoint: {
-                        data: [
-                            {type: 'max', name: '最大值'},
-                            {type: 'min', name: '最小值'}
-                        ]
-                    },
+                    // markPoint: {
+                    //     data: [
+                    //         {type: 'max', name: '最大值'},
+                    //         {type: 'min', name: '最小值'}
+                    //     ]
+                    // },
                 },
                 {
                     name: '30日移动平均',
@@ -652,7 +652,7 @@
 
     //查询行情数据
     function quarterMovingAverage() {
-        $('#week').html('');
+        $('#quarter').html('');
         $.post(path + "/securities/queryMarket", {
             code: code,
             type: 4
@@ -661,7 +661,7 @@
                 var data = res.data;
                 var id = data.id;
                 var systemCode = data.systemCode;
-                $('#week').append('' +
+                $('#quarter').append('' +
                     '<div style="width: 100%">' +
                     '   <div style="width: 80%;">' +
                     '       <div id="quarterClosingPrice' + id + '" style="width: 100%;height:400px;"></div>' +
@@ -759,12 +759,12 @@
                         color: '#DB3462',
                         width: 1
                     },
-                    markPoint: {
-                        data: [
-                            {type: 'max', name: '最大值'},
-                            {type: 'min', name: '最小值'}
-                        ]
-                    },
+                    // markPoint: {
+                    //     data: [
+                    //         {type: 'max', name: '最大值'},
+                    //         {type: 'min', name: '最小值'}
+                    //     ]
+                    // },
                 },
                 {
                     name: '365日移动平均',
@@ -789,7 +789,7 @@
 
     //查询行情数据
     function yearMovingAverage() {
-        $('#week').html('');
+        $('#year').html('');
         $.post(path + "/securities/queryMarket", {
             code: code,
             type: 5
@@ -798,7 +798,7 @@
                 var data = res.data;
                 var id = data.id;
                 var systemCode = data.systemCode;
-                $('#week').append('' +
+                $('#year').append('' +
                     '<div style="width: 100%">' +
                     '   <div style="width: 80%;">' +
                     '       <div id="yearClosingPrice' + id + '" style="width: 100%;height:400px;"></div>' +
@@ -895,12 +895,12 @@
                         color: '#DB3462',
                         width: 1
                     },
-                    markPoint: {
-                        data: [
-                            {type: 'max', name: '最大值'},
-                            {type: 'min', name: '最小值'}
-                        ]
-                    },
+                    // markPoint: {
+                    //     data: [
+                    //         {type: 'max', name: '最大值'},
+                    //         {type: 'min', name: '最小值'}
+                    //     ]
+                    // },
                 }
             ]
         };
