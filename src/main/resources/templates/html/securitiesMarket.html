@@ -19,7 +19,7 @@
 </head>
 <body>
     <div class="chart">
-        <div class="layui-tab" id="markt" lay-filter="tabFilter">
+        <div class="layui-tab" id="markt" lay-filter="tabFilter" style="height: 500px;width: 100%;margin:0px;">
             <ul class="layui-tab-title">
                 <li class="layui-this">日</li>
                 <li>周</li>
@@ -37,16 +37,10 @@
         </div>
 
 
-        <div id="markt_" style="height: 400px;width: 100%;display: none;"></div>
-        <div style="width: 100%;">
-            <div style="width: 50%;float: left;margin-top: 20px;">
-                <div style="text-align: center; width: 100%;"><h3>上次期势能</h3></div>
-                <div id="potentialEnergy" style="width: 100%;"></div>
-            </div>
-            <div style="width: 50%;float: left;margin-top: 20px;">
-                <div style="text-align: center; width: 100%;"><h3>本期势能</h3></div>
-                <div id="potentialEnergy_" style="width: 100%;"></div>
-            </div>
+        <div id="markt_" style="height: 500px;width: 100%;display: none;margin:0px;"></div>
+        <div style="width: 80%;margin-top: 20px;">
+            <!--<div id="potentialEnergy" style="width: 100%;"></div>-->
+            <div id="potentialEnergy_" style="width: 100%;"></div>
         </div>
     </div>
 </body>
@@ -70,9 +64,9 @@
             $('#markt_').hide();
             $('#markt').attr('class', 'layui-tab');
         }
-        if(scroH >100){  //距离顶部大于100px时
+        if(scroH > 0){  //距离顶部大于100px时
             $('#markt_').show();
-            $('#markt').attr('class', 'markt1');
+            $('#markt').attr('class', 'layui-tab markt1');
         }
         if (contentH - (scroH + viewH) <= 100){  //距离底部高度小于100px
         }
@@ -224,12 +218,6 @@
                         color: '#DB3462',
                         width: 1
                     },
-                    // markPoint: {
-                    //     data: [
-                    //         {type: 'max', name: '最大值'},
-                    //         {type: 'min', name: '最小值'}
-                    //     ]
-                    // },
                 },
                 {
                     name: '5日移动平均',
@@ -416,12 +404,6 @@
                         color: '#DB3462',
                         width: 1
                     },
-                    // markPoint: {
-                    //     data: [
-                    //         {type: 'max', name: '最大值'},
-                    //         {type: 'min', name: '最小值'}
-                    //     ]
-                    // },
                 },
                 {
                     name: '15日移动平均',
@@ -514,7 +496,6 @@
         var id = data.id;
         var latitude = data.latitude;
         var closingPrice = data.closingPrice;
-        var monthAvgClosingPrice = data.monthAvgClosingPrice;
         var quarterAvgClosingPrice = data.quarterAvgClosingPrice;
         var yearAvgClosingPrice = data.yearAvgClosingPrice;
         var name = data.name;
@@ -544,7 +525,7 @@
                 }
             },
             legend: {
-                data: ['收盘价',  '30日移动平均', '90日移动平均', '365日移动平均']
+                data: ['收盘价', '90日移动平均', '365日移动平均']
             },
             grid: {
                 left: '3%',
@@ -595,25 +576,6 @@
                         color: '#DB3462',
                         width: 1
                     },
-                    // markPoint: {
-                    //     data: [
-                    //         {type: 'max', name: '最大值'},
-                    //         {type: 'min', name: '最小值'}
-                    //     ]
-                    // },
-                },
-                {
-                    name: '30日移动平均',
-                    data: monthAvgClosingPrice,
-                    type: 'line',
-                    itemStyle:{
-                        color: '#5B7AD7',
-                    },
-                    lineStyle: {
-                        color: '#5B7AD7',
-                        width: 1
-                    },
-                    showSymbol: false,
                 },
                 {
                     name: '90日移动平均',
@@ -759,12 +721,6 @@
                         color: '#DB3462',
                         width: 1
                     },
-                    // markPoint: {
-                    //     data: [
-                    //         {type: 'max', name: '最大值'},
-                    //         {type: 'min', name: '最小值'}
-                    //     ]
-                    // },
                 },
                 {
                     name: '365日移动平均',
@@ -895,12 +851,6 @@
                         color: '#DB3462',
                         width: 1
                     },
-                    // markPoint: {
-                    //     data: [
-                    //         {type: 'max', name: '最大值'},
-                    //         {type: 'min', name: '最小值'}
-                    //     ]
-                    // },
                 }
             ]
         };

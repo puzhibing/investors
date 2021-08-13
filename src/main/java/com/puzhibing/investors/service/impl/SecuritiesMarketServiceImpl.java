@@ -183,7 +183,9 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             String cjje = jsonArray.getString(9);//成交金额（元）
             String zdje = jsonArray.getString(11);//涨跌金额
             String zfl = jsonArray.getString(12);//振幅率（%）
-
+            if(!StringUtils.hasLength(spj)){
+                continue;
+            }
 
             Securities securities = securitiesMapper.queryByCodeAndSecuritiesCategory(code, sh_a.getId());
             if(null == securities){
@@ -265,6 +267,9 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             String cjje = jsonArray.getString(9);//成交金额（元）
             String zdje = jsonArray.getString(11);//涨跌金额
             String zfl = jsonArray.getString(12);//振幅率（%）
+            if(!StringUtils.hasLength(spj)){
+                continue;
+            }
 
             Securities securities = securitiesMapper.queryByCodeAndSecuritiesCategory(code, sh_b.getId());
             if(null == securities){
@@ -350,21 +355,11 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             String cjl = jsonObject.getString("volume");//成交量（股）
             String cjje = jsonObject.getString("amount");//成交金额（元）
             String zdje = jsonObject.getString("delta");//涨跌金额
-            String zfl = null;
-            if(null == kpj){//停牌
-                kpj = sqspj;//开盘价
-                zgj = sqspj;//最高价
-                zdj = sqspj;//最低价
-                spj = sqspj;//收盘价
-                zdl = "0";//涨跌率（%）
-                cjl = "0";//成交量（股）
-                cjje = "0";//成交金额（元）
-                zdje = "0";//涨跌金额
-                zfl = "0";//振幅率（%）
-            }else{
-                BigDecimal divide = new BigDecimal(Double.valueOf(zgj) - Double.valueOf(zdj)).multiply(new BigDecimal(100)).divide(new BigDecimal(sqspj), new MathContext(2, RoundingMode.HALF_EVEN));
-                zfl = divide.toString();//振幅率（%）
+            if(!StringUtils.hasLength(spj)){//停牌
+                continue;
             }
+            BigDecimal divide = new BigDecimal(Double.valueOf(zgj) - Double.valueOf(zdj)).multiply(new BigDecimal(100)).divide(new BigDecimal(sqspj), new MathContext(2, RoundingMode.HALF_EVEN));
+            String zfl = divide.toString();//振幅率（%）
             JSONArray picdowndata = jsonObject.getJSONArray("picdowndata");
             Long inout = 0L;
             if(null != picdowndata){
@@ -459,21 +454,11 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
             String cjl = jsonObject.getString("volume");//成交量（股）
             String cjje = jsonObject.getString("amount");//成交金额（元）
             String zdje = jsonObject.getString("delta");//涨跌金额
-            String zfl = null;
-            if(null == kpj){//停牌
-                kpj = sqspj;//开盘价
-                zgj = sqspj;//最高价
-                zdj = sqspj;//最低价
-                spj = sqspj;//收盘价
-                zdl = "0";//涨跌率（%）
-                cjl = "0";//成交量（股）
-                cjje = "0";//成交金额（元）
-                zdje = "0";//涨跌金额
-                zfl = "0";//振幅率（%）
-            }else{
-                BigDecimal divide = new BigDecimal(Double.valueOf(zgj) - Double.valueOf(zdj)).multiply(new BigDecimal(100)).divide(new BigDecimal(sqspj), new MathContext(2, RoundingMode.HALF_EVEN));
-                zfl = divide.toString();//振幅率（%）
+            if(!StringUtils.hasLength(spj)){//停牌
+                continue;
             }
+            BigDecimal divide = new BigDecimal(Double.valueOf(zgj) - Double.valueOf(zdj)).multiply(new BigDecimal(100)).divide(new BigDecimal(sqspj), new MathContext(2, RoundingMode.HALF_EVEN));
+            String zfl = divide.toString();//振幅率（%）
             JSONArray picdowndata = jsonObject.getJSONArray("picdowndata");
             Long inout = 0L;
             if(null != picdowndata){
@@ -1406,6 +1391,9 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                     String zf = !NumberUtils.isCreatable(td.get(9).text()) ? "0" : td.get(9).text();//振幅(%)
                     String hsl = !NumberUtils.isCreatable(td.get(10).text()) ? "0" : td.get(10).text();//换手率(%)
                     String sqspj = new BigDecimal(spj).subtract(new BigDecimal(zde)).setScale(2, RoundingMode.HALF_EVEN).toString();//上期收盘价
+                    if(!StringUtils.hasLength(spj)){
+                        continue;
+                    }
                     SecuritiesMarketVo securitiesMarketVo = new SecuritiesMarketVo();
                     securitiesMarketVo.setSecuritiesId(s.getId());
                     securitiesMarketVo.setTradeDate(sdf1.parse(rq));
@@ -1420,9 +1408,7 @@ public class SecuritiesMarketServiceImpl implements ISecuritiesMarketService {
                     securitiesMarketVo.setVolume(String.valueOf(Integer.valueOf(cjl) * 100));
                     securitiesMarketVo.setDealAmount(String.valueOf(Integer.valueOf(cjje) * 10000));
                     securitiesMarketVo.setTurnoverRate(hsl);
-                    if(!StringUtils.hasLength(securitiesMarketVo.getClosingPrice())){
-                        continue;
-                    }
+
                     list.add(securitiesMarketVo);
                 }
                 quarter++;
